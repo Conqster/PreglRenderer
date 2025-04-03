@@ -1,5 +1,5 @@
 #pragma once
-#include "../NonCopyable.h"
+#include "NonCopyable.h"
 
 struct GLFWwindow;
 namespace InputSystem

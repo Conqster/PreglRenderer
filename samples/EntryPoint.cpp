@@ -1,7 +1,6 @@
 #pragma once
-#include "Application.h"
-
-#include "Renderer/SampleGfxProgram.h"
+#include "Core/Application.h"
+#include "SampleGfxProgram.h"
 
 int main()
 {

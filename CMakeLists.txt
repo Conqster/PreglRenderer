@@ -21,7 +21,7 @@ include_directories(${PROJECT_SOURCE_DIR})
 option(USE_IMGUI "Use ImGui for UI" OFF)
 
 #find all source & library files
-file(GLOB_RECURSE source_files "src/*.h" "src/*.cpp")
+file(GLOB_RECURSE source_files "pregl/*.h" "pregl/*.cpp" "samples/*.h" "samples/*.cpp")
 file(GLOB_RECURSE library_files "libs/*.h" "libs/*.c" "libs/*.cpp")
 
 set(ALL_SRC_FILES ${source_files} ${library_files})
@@ -30,16 +30,17 @@ add_executable(${PROJECT_NAME} ${ALL_SRC_FILES})
 
 #Additional Include Directories (Properties > C/C++ > General > this)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+#external libraries (dependencies)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs/glfw/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs/GLM)
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/SampleFramework)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs/assimp/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs/glew/include)
-
+#source
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/pregl)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR})
+
 
 #Additional Library Directories (Properties > Linker > General > this)
 #Later use command to find cmake for glew add build if x86 or x64 

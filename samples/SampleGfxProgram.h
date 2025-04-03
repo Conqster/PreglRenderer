@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Renderer/GraphicsProgramInterface.h"
+#include "Core/GraphicsProgramInterface.h"
 
-#include "Camera.h"
+#include "Core/EditorCamera.h"
 #include "GLM/glm/glm.hpp"
-#include "Shader.h"
-#include "GPUVertexData.h"
+#include "Renderer/Shader.h"
+#include "Renderer/GPUVertexData.h"
 
 struct Light
 {

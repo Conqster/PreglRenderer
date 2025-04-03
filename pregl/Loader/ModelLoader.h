@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../NonCopyable.h"
+#include "Core/NonCopyable.h"
 #include "Renderer/GPUVertexData.h"
 
 #include <string>

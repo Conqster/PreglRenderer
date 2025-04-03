@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Display/DisplayManager.h"
-#include "Camera.h"
+#include "DisplayManager.h"
+#include "EditorCamera.h"
 #include <string>
 
 
@@ -31,7 +31,7 @@ private:
 	class GraphicsProgramInterface* mGfxProgram = nullptr;
 	class DebugGizmosRenderer* mDebugGizmos = nullptr;
 
-	Camera mMainCamera;
+	EditorCamera mMainCamera;
 
 	//Pointer to global static event handler
 	InputSystem::EventHandler* mPtrInputEventHandle = nullptr;
@@ -42,7 +42,7 @@ public:
 
 	void AddGfxProgram(GraphicsProgramInterface* Gfx) { mGfxProgram = Gfx; }
 	DisplayManager& GetDisplay() { return mDisplayManager; }
-	Camera& GetCamera() { return mMainCamera; }
+	EditorCamera& GetCamera() { return mMainCamera; }
 
 	virtual ~Application();
 

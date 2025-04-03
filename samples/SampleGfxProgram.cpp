@@ -1,15 +1,15 @@
 #include "SampleGfxProgram.h"
 
-#include "Texture.h"
-#include "Camera.h"
+#include "Renderer/Texture.h"
+#include "Core/EditorCamera.h"
 
 #include <GLM/glm/gtc/matrix_transform.hpp>
-#include "Utils/Util.h"
-#include "Utils/Loader.h"
+#include "Core/Util.h"
+#include "Loader/Loader.h"
 
-#include "Input/InputSystem.h"
+#include "Core/InputSystem.h"
 
-#include "Utils/ModelLoader.h"
+#include "Loader/ModelLoader.h"
 
 #include "libs/imgui/imgui.h"
 
@@ -26,7 +26,7 @@ void SampleGfxProgram::OnInitialise(DisplayManager* display_window)
 	success &= mWorldGridShader.Create("world_grid", "assets/shaders/worldGrid/worldGrid.vert", "assets/shaders/worldGrid/worldGrid.frag", "assets/shaders/worldGrid/worldGrid.geo");
 
 	if(!mCamera)
-		mCamera = new Camera(glm::vec3(0.41f, 5.29f, -10.61f), 90.0f, -0.3f, 17.5f, 4.0f);
+		mCamera = new EditorCamera(glm::vec3(0.41f, 5.29f, -10.61f), 90.0f, -0.3f, 17.5f, 4.0f);
 
 	if (success)
 		printf("Successfully create a shaders!!!!!!\n");

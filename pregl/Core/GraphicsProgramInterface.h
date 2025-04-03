@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Display/DisplayManager.h"
+#include "DisplayManager.h"
 #include "NonCopyable.h"
 
 class GraphicsProgramInterface : public NonCopyable
@@ -16,10 +16,10 @@ public:
 
 	virtual void OnUI() = 0;
 
-	void SetCamera(class Camera* cam) {
+	void SetCamera(class EditorCamera* cam) {
 		mCamera = cam;
 	}
 protected:
 	DisplayManager* mDisplayManager = nullptr;
-	Camera* mCamera = nullptr;
+	EditorCamera* mCamera = nullptr;
 };

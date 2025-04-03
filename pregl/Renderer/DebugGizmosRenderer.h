@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../NonCopyable.h"
+#include "Core/NonCopyable.h"
 #include "Shader.h"
 
 //#define QUICK_DEGUB_LINE
@@ -19,7 +19,7 @@ public:
 	void DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3, const glm::vec3& colour);
 	//void DrawTriangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec4 colour, bool cull_face = true);
 
-	void SendBatchesToGPU(class Camera& cam_ref, float aspect_ratio);
+	void SendBatchesToGPU(class EditorCamera& cam_ref, float aspect_ratio);
 
 	float GetLineWidth() const { return mLineWidth; }
 	void SetLineWidth(float value) {

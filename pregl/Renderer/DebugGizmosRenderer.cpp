@@ -1,5 +1,5 @@
 #include "DebugGizmosRenderer.h"
-#include "Camera.h"
+#include "Core/EditorCamera.h"
 
 bool DebugGizmosRenderer::Initialise()
 {
@@ -76,7 +76,7 @@ void DebugGizmosRenderer::DrawWireTriangle(const glm::vec3& v1, const glm::vec3&
 }
 
 
-void DebugGizmosRenderer::SendBatchesToGPU(Camera& cam_ref, float aspect_ratio)
+void DebugGizmosRenderer::SendBatchesToGPU(EditorCamera& cam_ref, float aspect_ratio)
 {
 	if (!this)
 	{

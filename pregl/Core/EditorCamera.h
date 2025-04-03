@@ -3,11 +3,11 @@
 #include <GLM/glm/glm.hpp>
 
 
-class Camera
+class EditorCamera
 {
 public:
-	Camera() = default;
-	Camera(glm::vec3 pos, float yaw, float pitch, float move_speed, float rot_speed);
+	EditorCamera() = default;
+	EditorCamera(glm::vec3 pos, float yaw, float pitch, float move_speed, float rot_speed);
 
 	glm::mat4 ViewMat();
 	glm::mat4 ProjMat(float aspect_ratio);

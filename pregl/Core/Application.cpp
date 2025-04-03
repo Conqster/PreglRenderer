@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "Input/InputSystem.h"
+#include "InputSystem.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -7,11 +7,11 @@
 //remove this later
 #include <GLM/glm/gtc/matrix_transform.hpp>
 
-#include "Utils/Util.h"
+#include "Util.h"
 
-#include "../Profiler.h"
+#include "Profiler.h"
 #include "Renderer/DebugGizmosRenderer.h"
-#include "Renderer/GraphicsProgramInterface.h"
+#include "GraphicsProgramInterface.h"
 
 
 //using imgui
@@ -31,7 +31,7 @@ Application::Application(const ApplicationSpecification& app_spec)
 	//printf("memory size of Renderer: %d bytes\n", int(sizeof(Renderer)));
 	//printf("memory size of SampleGfxProgram: %d bytes\n", int(sizeof(SampleGfxProgram)));
 	printf("memory size of DebugGizmosRenderer: %d bytes\n", int(sizeof(DebugGizmosRenderer)));
-	printf("memory size of Camera: %d bytes\n", int(sizeof(Camera)));
+	printf("memory size of Camera: %d bytes\n", int(sizeof(EditorCamera)));
 	printf("memory size of EventHandler: %d bytes\n", int(sizeof(EventHandler)));
 
 
@@ -42,7 +42,7 @@ Application::Application(const ApplicationSpecification& app_spec)
 
 	if (!bFailLaunch)
 	{
-		mMainCamera = Camera(glm::vec3(0.41f, 5.29f, -10.61f), 90.0f, -0.3f, 17.5f, 4.0f);
+		mMainCamera = EditorCamera(glm::vec3(0.41f, 5.29f, -10.61f), 90.0f, -0.3f, 17.5f, 4.0f);
 
 		mPtrInputEventHandle = &InputSystem::EventHandler::Instance();
 		mPtrInputEventHandle->CreateCallbacks(mDisplayManager.GetWindow());
