@@ -1,13 +1,28 @@
 #include "DebugGizmosRenderer.h"
 #include "Core/EditorCamera.h"
+#include "Core/Log.h"
+
 
 bool DebugGizmosRenderer::Initialise()
 {
 	if (!this)
 	{
-		printf("Failed to initialise debug gizmos renderer, memory error\n");
+		DEBUG_LOG_ERROR("Failed to initialise debug gizmos renderer, memory error");
 		return false;
 	}
+
+
+	//quick hack 
+	if (mLineSegVertex.VAO)
+	{
+		DEBUG_LOG_STATUS("Initilaising Debug Gizmos Renderer, Clearing Old GPU Data.");
+		mShader.Clear();
+
+		glDeleteBuffers(1, &mLineSegVertex.VBO);
+		glDeleteVertexArrays(1, &mLineSegVertex.VAO);
+
+	}
+
     bool success = false;
     success = mShader.Create("debug-shader",
                              "assets/shaders/debug/batchLines.vert", //vertex shader
@@ -48,7 +63,7 @@ void DebugGizmosRenderer::DrawLine(const glm::vec3& v0, const glm::vec3& v1, con
 {
 	if (!this)
 	{
-		printf("Failed to use debug gizmos renderer, memory error\n");
+		DEBUG_LOG_ERROR("Failed to use debug gizmos renderer, memory error");
 		return;
 	}
 	//struct Line
@@ -67,7 +82,7 @@ void DebugGizmosRenderer::DrawWireTriangle(const glm::vec3& v1, const glm::vec3&
 {
 	if (!this)
 	{
-		printf("Failed to use debug gizmos renderer, memory error\n");
+		DEBUG_LOG_ERROR("Failed to use debug gizmos renderer, memory error");
 		return;
 	}
 	DrawLine(v1, v2, colour);
@@ -80,7 +95,7 @@ void DebugGizmosRenderer::SendBatchesToGPU(EditorCamera& cam_ref, float aspect_r
 {
 	if (!this)
 	{
-		printf("Failed to use debug gizmos renderer, memory error\n");
+		DEBUG_LOG_ERROR("Failed to use debug gizmos renderer, memory error");
 		return;
 	}
 
@@ -119,4 +134,25 @@ void DebugGizmosRenderer::SendBatchesToGPU(EditorCamera& cam_ref, float aspect_r
 	glBindVertexArray(0);
 	//unbind shader
 	glUseProgram(0);
+}
+
+void DebugGizmosRenderer::SetLineWidth(float value)
+{
+	if (!this)
+	{
+		DEBUG_LOG_WARNING("Failed to set debug gizmos renderer line width, memory error");
+		return;
+	}
+	mLineWidth = value;
+}
+
+void DebugGizmosRenderer::ClearData()
+{
+	mShader.Clear();
+
+	glDeleteBuffers(1, &mLineSegVertex.VBO);
+	glDeleteVertexArrays(1, &mLineSegVertex.VAO);
+
+	mLineBatches.clear();
+	DEBUG_LOG_STATUS("Cleared Debug Gizmos Renderer Data");
 }

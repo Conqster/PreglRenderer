@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 
+
+
 struct Vertex
 {
 	float position[3];

@@ -1,6 +1,6 @@
 #include "ModelLoader.h"
 #include "Core/Util.h"
-
+#include "Core/Log.h"
 
 RenderableMesh ModelLoader::LoadAsSingleMesh(const std::string& path, bool flip_uv)
 {
@@ -13,23 +13,37 @@ RenderableMesh ModelLoader::LoadAsSingleMesh(const std::string& path, bool flip_
 
 	if (!scene || scene->mFlags && AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
-		printf("[ASSIMP ERROR]: %s\n", importer.GetErrorString());
+		DEBUG_LOG_STATUS("[ASSIMP ERROR]: ", importer.GetErrorString());
 		return {};
 	}
 
 	mCurrModelDir = path.substr(0, path.find_last_of('/'));
 
-	printf("%s\n", mCurrModelDir.c_str());
-    return ProcessNodeForSingleMesh(scene->mRootNode, scene);
+	DEBUG_LOG_STATUS("[ASSIMP - Load as Single Mesh]: Loading Model, path: ", mCurrModelDir);
+    return SingleMeshProcessing(scene->mRootNode, scene);
 }
 
-RenderableMesh ModelLoader::ProcessNodeForSingleMesh(aiNode* node, const aiScene* scene)
+RenderableMesh ModelLoader::SingleMeshProcessing(aiNode* node, const aiScene* scene)
 {
-	///////////////
-	// LOG
-	///////////////
-	printf("[PROCESS NODE] Mesh count: %d from %s\n", node->mNumMeshes, mCurrModelDir.c_str());
-	printf("[PROCESS NODE] Mesh children count: %d from %s\n", node->mNumChildren, mCurrModelDir.c_str());
+	DEBUG_LOG_STATUS("[PROCESS NODE]: For Single Mesh");
+	BatchProcessNodeForSingleMesh(node, scene);
+	if (mGroupedVertices.size() > 0 && mGroupedIndices.size())
+	{
+		RenderableMesh _mesh;
+		_mesh.Create(mGroupedVertices, mGroupedIndices);
+		DEBUG_LOG_STATUS("[ASSIMP - SINGLE MESH]: Single Mesh generated from Batches");
+		mGroupedVertices.clear();
+		mGroupedIndices.clear();
+		return _mesh;
+	}
+	DEBUG_LOG_WARNING("[ASSIMP - SINGLE MESH]: No Mesh was generated");
+	return {};
+}
+
+void ModelLoader::BatchProcessNodeForSingleMesh(aiNode* node, const aiScene* scene)
+{
+	DEBUG_LOG_STATUS("[PROCESS NODE] Mesh count: ", node->mNumMeshes, " from ", mCurrModelDir);
+	DEBUG_LOG_STATUS("[PROCESS NODE] Mesh children count: ", node->mNumChildren, " from ", mCurrModelDir);
 
 
 	//process all node in current node
@@ -45,16 +59,10 @@ RenderableMesh ModelLoader::ProcessNodeForSingleMesh(aiNode* node, const aiScene
 	{
 		//std::vector<ModelMesh> temp = ProcessNodes(node->mChildren[i], scene);
 		//temp_mesh.insert(temp_mesh.end(), temp.begin(), temp.end());
-		ProcessNodeForSingleMesh(node->mChildren[i], scene);
+		BatchProcessNodeForSingleMesh(node->mChildren[i], scene);
 	}
 
-	if (mGroupedVertices.size() > 0 && mGroupedIndices.size())
-	{
-		RenderableMesh _mesh;
-		_mesh.Create(mGroupedVertices, mGroupedIndices);
-		return _mesh;
-	}
-	return {};
+	DEBUG_LOG_STATUS("[PROCESS NODE]: node process complete.");
 }
 
 void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
@@ -150,6 +158,7 @@ void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
 
 	mGroupedVertices.insert(mGroupedVertices.end(), temp_vertices.begin(), temp_vertices.end());
 	mGroupedIndices.insert(mGroupedIndices.end(), temp_indices.begin(), temp_indices.end());
+	DEBUG_LOG_STATUS("[PROCESS MESH]: Batched vertices & indices to Single Mesh groups.");
 }
 
 std::vector<Vertex> ModelLoader::CalcAverageNormalsWcIndices(std::vector<Vertex>& vertices, std::vector<unsigned int> indices)
@@ -204,6 +213,7 @@ std::vector<Vertex> ModelLoader::CalcAverageNormalsWcIndices(std::vector<Vertex>
 		temp[i].normal[2] = vec.z;
 	}
 
+	DEBUG_LOG_STATUS("[ASSIMP]: Calculated Average Normals with indices.");
 	return temp;
 }
 

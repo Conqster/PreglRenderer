@@ -22,7 +22,8 @@ private:
 
 	std::vector<Vertex> mGroupedVertices;
 	std::vector<unsigned> mGroupedIndices;
-	RenderableMesh ProcessNodeForSingleMesh(aiNode* node, const aiScene* scene);
+	RenderableMesh SingleMeshProcessing(aiNode* node, const aiScene* scene);
+	void BatchProcessNodeForSingleMesh(aiNode* node, const aiScene* scene);
 	void ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene);
 
 

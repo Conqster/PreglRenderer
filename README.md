@@ -23,3 +23,10 @@ git clone https://github.com/Conqster/PreglRenderer.git
 cd PreglRenderer
 cmake -G "Visual Studio 17 2022" . 
 ```
+
+
+## Sample
+
+|<img src = "docs/lighting.png"/>|
+|:-|
+|<img src = "docs/ShadowLighting.gif"/>|

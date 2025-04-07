@@ -1,16 +1,16 @@
 #pragma once
 
-#include "DisplayManager.h"
+#include "AppWindow.h"
 #include "NonCopyable.h"
 
 class GraphicsProgramInterface : public NonCopyable
 {
 public: 
 	GraphicsProgramInterface() {}
-	GraphicsProgramInterface(DisplayManager* display_window) {
+	GraphicsProgramInterface(AppWindow* display_window) {
 		mDisplayManager = display_window;
 	}
-	virtual void OnInitialise(DisplayManager* display_window) = 0;
+	virtual void OnInitialise(AppWindow* display_window) = 0;
 	virtual void OnUpdate(float delta_time) = 0;
 	virtual void OnDestroy() = 0;
 
@@ -20,6 +20,6 @@ public:
 		mCamera = cam;
 	}
 protected:
-	DisplayManager* mDisplayManager = nullptr;
+	AppWindow* mDisplayManager = nullptr;
 	EditorCamera* mCamera = nullptr;
 };

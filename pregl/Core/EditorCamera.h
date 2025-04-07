@@ -16,6 +16,9 @@ public:
 	void Rotate(float dt_x, float dt_y);
 
 	glm::vec3 GetPosition() { return mPosition; }
+	void SetPosition(glm::vec3 pos) {
+		mPosition = pos;
+	}
 	glm::vec3 GetForward() { return mForward; }
 	glm::vec3 GetRight() { return mRight; }
 	glm::vec3 GetUp() { return mUp; }
@@ -34,8 +37,6 @@ private:
 	glm::vec3 mUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 mRight = glm::vec3(1.0f, 0.0f, 0.0f);
 
-	float mYaw = 90.0f;
-	float mPitch = 0.0f;
 
 public:
 	float mMoveSpeed = 100.0f;
@@ -44,4 +45,7 @@ public:
 	float mFOV = 60.0f;
 	float mNear = 0.1f;
 	float mFar = 150.0f;
+
+	float mYaw = 90.0f;
+	float mPitch = 0.0f;
 };

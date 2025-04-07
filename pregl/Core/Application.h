@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DisplayManager.h"
+#include "AppWindow.h"
 #include "EditorCamera.h"
 #include <string>
 
@@ -25,23 +25,17 @@ namespace InputSystem {
 class Application
 {
 private:
-	DisplayManager mDisplayManager;
-
-
+	AppWindow mDisplayManager;
 	class GraphicsProgramInterface* mGfxProgram = nullptr;
-	class DebugGizmosRenderer* mDebugGizmos = nullptr;
-
 	EditorCamera mMainCamera;
-
 	//Pointer to global static event handler
 	InputSystem::EventHandler* mPtrInputEventHandle = nullptr;
-
 public:
 	Application() = delete;
 	Application(const ApplicationSpecification& app_spec);
 
 	void AddGfxProgram(GraphicsProgramInterface* Gfx) { mGfxProgram = Gfx; }
-	DisplayManager& GetDisplay() { return mDisplayManager; }
+	AppWindow& GetDisplay() { return mDisplayManager; }
 	EditorCamera& GetCamera() { return mMainCamera; }
 
 	virtual ~Application();
@@ -54,4 +48,7 @@ private:
 	double mLastFrameTime = 0.0f;
 
 	void UpdateMainCamera(float dt);
+
+
+	void ApplicationUI();
 };

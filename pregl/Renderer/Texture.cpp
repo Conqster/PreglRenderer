@@ -1,7 +1,7 @@
 #include "Texture.h"
 #include <stb_image/stb_image.h>
 
-#include "ErrorAssertion.h"
+#include "GLErrorAssertion.h"
 
 Texture::Texture(std::string file_path, bool flip_uv)
 {

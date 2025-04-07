@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/GPUVertexData.h"
+#include "Core/Log.h"
 
 #include <string>
 #include <fstream>
@@ -10,12 +11,10 @@
 
 
 #if DEBUG_TO_CONSOLE
-	#include <iostream>
-	#define CONSOLE_LOG(x) std::cout << x << std::endl
+	#define LOG_STEP_INFO(...) DEBUG_LOG_INFO(...)
 #else
-	#define CONSOLE_LOG(x)
+	#define LOG_STEP_INFO(...)
 #endif // DEBUG_TO_CONSOLE
-
 
 
 namespace Loader
@@ -25,7 +24,7 @@ namespace Loader
 		std::ifstream file_stream(path, std::ios::in);
 		if (!file_stream.is_open())
 		{
-			CONSOLE_LOG("[Loader Mesh]: Failed to open file: " << path.c_str());
+			DEBUG_LOG_WARNING("[Loader Mesh]: Failed to open file: ", path);
 			return {};
 		}
 
@@ -38,25 +37,25 @@ namespace Loader
 			std::istringstream iss(line);
 			std::string prefix;
 			iss >> prefix;
-			CONSOLE_LOG(prefix.c_str());
+			LOG_STEP_INFO(prefix);
 			if (prefix == "vcount")
 			{
 				int c;
 				iss >> c;
 				vertices.reserve(c);
-				CONSOLE_LOG("vertex count: " << c);
+				LOG_STEP_INFO("vertex count: ", c);
 			}
 			else if (prefix == "hascolour")
 			{
 				iss >> has_colour;
-				CONSOLE_LOG("vertex has colour: " << ((has_colour)? "true":"false"));
+				LOG_STEP_INFO("vertex has colour: ", ((has_colour)? "true":"false"));
 			}
 			else if (prefix == "icount")
 			{
 				int c;
 				iss >> c;
 				indices.reserve(c);
-				CONSOLE_LOG("indices count: " << c);
+				LOG_STEP_INFO("indices count: ", c);
 			}
 			else if (prefix == "v")
 			{
@@ -74,7 +73,7 @@ namespace Loader
 				}
 					
 				vertices.push_back(v);
-				CONSOLE_LOG("vertex x: " << v.position[0] << "f, y: " << v.position[1] << "f, z : " << v.colour[0] << "f, r : " << v.colour[1] << "f, g : " << v.colour[1] << "f, b : " << v.colour[2] << "f");
+				LOG_STEP_INFO("vertex x: ", v.position[0], "f, y: ", v.position[1], "f, z : ", v.colour[0], "f, r : ", v.colour[1], "f, g : ", v.colour[1], "f, b : ", v.colour[2], "f");
 			}
 			else if (prefix == "i")
 			{
@@ -83,10 +82,11 @@ namespace Loader
 				indices.push_back(i[0]);
 				indices.push_back(i[1]);
 				indices.push_back(i[2]);
-				CONSOLE_LOG("triange indices: " << i[0] << ", " << i[1] << ", " << i[2]);
+				LOG_STEP_INFO("triange indices: ", i[0], ", ", i[1], ", ", i[2]);
 			}
 		}
 
+		DEBUG_LOG_STATUS("Complete mesh loading from file. path: ", path);
 		RenderableMesh renderable_mesh(vertices, indices);
 		return renderable_mesh;
 	}

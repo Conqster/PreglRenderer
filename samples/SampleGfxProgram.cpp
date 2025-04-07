@@ -17,7 +17,7 @@
 using namespace InputSystem;
 
 
-void SampleGfxProgram::OnInitialise(DisplayManager* display_window)
+void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 {
 	mDisplayManager = display_window;
 

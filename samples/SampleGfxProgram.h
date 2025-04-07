@@ -18,9 +18,9 @@ class SampleGfxProgram : public GraphicsProgramInterface
 {
 public:
 	SampleGfxProgram() {}
-	SampleGfxProgram(DisplayManager* display_window) : GraphicsProgramInterface(display_window){}
+	SampleGfxProgram(AppWindow* display_window) : GraphicsProgramInterface(display_window){}
 
-	virtual void OnInitialise(DisplayManager* display_window) override;
+	virtual void OnInitialise(AppWindow* display_window) override;
 	virtual void OnUpdate(float delta_time) override;
 	virtual void OnDestroy() override;
 	virtual void OnUI() override;

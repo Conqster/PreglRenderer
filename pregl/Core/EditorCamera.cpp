@@ -5,6 +5,7 @@
 EditorCamera::EditorCamera(glm::vec3 pos, float yaw, float pitch, float move_speed, float rot_speed)
 	: mPosition(pos), mYaw(yaw), mPitch(pitch), mMoveSpeed(move_speed), mRotSpeed(rot_speed)
 {
+
 	Update();
 }
 

@@ -3,34 +3,32 @@
 #include "Core/NonCopyable.h"
 #include "Shader.h"
 
-//#define QUICK_DEGUB_LINE
 
 class DebugGizmosRenderer : public NonCopyable 
 {
 public:
-	DebugGizmosRenderer() {
-		Initialise();
+	static DebugGizmosRenderer& Instance()
+	{
+		static DebugGizmosRenderer inst;
+		return inst;
 	}
+
 	~DebugGizmosRenderer() = default;
 
 	bool Initialise();
 
 	void DrawLine(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& colour);
 	void DrawWireTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3, const glm::vec3& colour);
-	//void DrawTriangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec4 colour, bool cull_face = true);
 
 	void SendBatchesToGPU(class EditorCamera& cam_ref, float aspect_ratio);
 
 	float GetLineWidth() const { return mLineWidth; }
-	void SetLineWidth(float value) {
-		if (!this){
-			printf("Failed to set debug gizmos renderer line width, memory error\n");
-			return;
-		}
-		mLineWidth = value;
-	}
+	void SetLineWidth(float value);
+
+	void ClearData();
 
 private:
+	DebugGizmosRenderer() { }
 	Shader mShader;
 	float mLineWidth = 1.0f;
 #pragma region HelperStructure

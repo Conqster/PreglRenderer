@@ -12,6 +12,8 @@ public:
 	bool Activate(unsigned int slot = 0) const;
 	void Disactivate() const;
 
+	unsigned int GetID() { return mID; }
+
 	void Clear();
 	~Texture() = default;
 private:

@@ -1,6 +1,7 @@
 #include "GPUVertexData.h"
 
-#include "ErrorAssertion.h"
+#include "GLErrorAssertion.h"
+#include "Core/Log.h"
 
 RenderableMesh::RenderableMesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices)
 {
@@ -58,6 +59,8 @@ void RenderableMesh::Create(std::vector<Vertex> vertices, std::vector<unsigned i
 	//unbind so other new buffer would link it this
 	glBindVertexArray(0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	DEBUG_LOG_STATUS("Created New Renderable Mesh, for GPU Vertex Data");
 }
 
 void RenderableMesh::Bind()
@@ -91,6 +94,7 @@ void RenderableMesh::Clear()
 	glDeleteBuffers(1, &mVBO);
 	glDeleteBuffers(1, &mIBO);
 	glDeleteVertexArrays(1, &mVAO);
+	DEBUG_LOG_STATUS("Destroyied Renderable Mesh");
 }
 
 

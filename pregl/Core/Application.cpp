@@ -21,20 +21,12 @@
 	#include "libs/imgui/imgui_impl_opengl3.h"
 #endif // USE_IMGUI
 
+#include "Log.h"
 
 using namespace InputSystem;
 
 Application::Application(const ApplicationSpecification& app_spec)
 {
-
-	printf("memory size of DisplayManager: %d bytes\n", int(sizeof(DisplayManager)));
-	//printf("memory size of Renderer: %d bytes\n", int(sizeof(Renderer)));
-	//printf("memory size of SampleGfxProgram: %d bytes\n", int(sizeof(SampleGfxProgram)));
-	printf("memory size of DebugGizmosRenderer: %d bytes\n", int(sizeof(DebugGizmosRenderer)));
-	printf("memory size of Camera: %d bytes\n", int(sizeof(EditorCamera)));
-	printf("memory size of EventHandler: %d bytes\n", int(sizeof(EventHandler)));
-
-
 
 	if (!mDisplayManager.Init(app_spec.name.c_str(), app_spec.launchWindowSize[0], app_spec.launchWindowSize[1], app_spec.launchFullScreen))
 		bFailLaunch = true;
@@ -59,14 +51,12 @@ Application::Application(const ApplicationSpecification& app_spec)
 		ImGui_ImplOpenGL3_Init("#version 400");
 #endif // USE_IMGUI
 
-		mDebugGizmos = new DebugGizmosRenderer();
-		if (!mDebugGizmos->Initialise())
+
+		if (!DebugGizmosRenderer::Instance().Initialise())
 		{
-			delete mDebugGizmos;
-			mDebugGizmos = nullptr;
-			printf("[APP -- {%s}], Failed to initialise debug gizmos renderer\n", app_spec.name.c_str());
+			DEBUG_LOG_WARNING("[APP -- {", app_spec.name, "}], Failed to initialise debug gizmos renderer");
 		}
-		mDebugGizmos->SetLineWidth(3.0f);
+		DebugGizmosRenderer::Instance().SetLineWidth(3.0f);
 	}
 }
 
@@ -87,11 +77,8 @@ Application::~Application()
 	ImGui::DestroyContext();
 #endif // USE_IMGUI
 
-
-	if(mDebugGizmos)
-		delete mDebugGizmos;
-	mDebugGizmos = nullptr;
-	printf("Terminating Program!!!!\n");
+	DebugGizmosRenderer::Instance().ClearData();
+	DEBUG_LOG_STATUS("Terminating Program!!!!");
 	mDisplayManager.Close();
 	mPtrInputEventHandle = nullptr;
 }
@@ -100,10 +87,6 @@ void Application::Run()
 {
 	if (bFailLaunch)
 		return;
-
-	const char* gl_renderer_version = (const char*)(glGetString(GL_RENDERER));
-	printf("OpenGL ver: %s\n", gl_renderer_version);
-
 
 	//main loop {delta time >> camera 
 	while (mDisplayManager.ProgramWindowActive())
@@ -146,6 +129,7 @@ void Application::Run()
 		ImGui::NewFrame();
 
 		//ui logic
+		ApplicationUI();
 		if (mGfxProgram)
 			mGfxProgram->OnUI();
 
@@ -157,7 +141,7 @@ void Application::Run()
 
 
 		//Resolve frame
-		mDebugGizmos->SendBatchesToGPU(mMainCamera, mDisplayManager.GetAspectRatio());
+		DebugGizmosRenderer::Instance().SendBatchesToGPU(mMainCamera, mDisplayManager.GetAspectRatio());
 		if (mPtrInputEventHandle)
 			mPtrInputEventHandle->FlushFrameInputs();
 		mDisplayManager.FlushAndSwapBuffer();
@@ -190,5 +174,46 @@ void Application::UpdateMainCamera(float dt)
 	if (Input::GetMousePressed(IKeyCode::MouseRightButton))
 	{
 		mDisplayManager.ToggleLockCursor();
+	}
+}
+
+void Application::ApplicationUI()
+{
+	//ImGui::ShowDemoWindow();
+	if (ImGui::Begin("Sample Gfx Program"))
+	{
+		ImGui::SeparatorText("PreglRenderer App");
+		//ImGui::Text("Win Title: %s", mDisplayManager.);
+		ImGui::Text("Window Width: %d", mDisplayManager.GetWidth());
+		ImGui::Text("Window Height: %d", mDisplayManager.GetHeight());
+
+		static bool helper_vsync_toggle = mDisplayManager.GetVSync();
+		if(ImGui::Checkbox("VSync", &helper_vsync_toggle))
+			mDisplayManager.SetVSync(helper_vsync_toggle);
+
+
+		//CAMERA
+		ImGui::SeparatorText("Camera info");
+		auto cam_pos = mMainCamera.GetPosition();
+		ImGui::Text("Position x: %f, y: %f, z: %f", cam_pos.x, cam_pos.y, cam_pos.z);
+
+		ImGui::Text("Pitch: %f", mMainCamera.GetPitch());
+		ImGui::Text("Yaw: %f", mMainCamera.GetYaw());
+
+
+		if (ImGui::TreeNode("Camera Properties"))
+		{
+			ImGui::SliderFloat("Move Speed", &mMainCamera.mMoveSpeed, 5.0f, 250.0f);
+			ImGui::SliderFloat("Rot Speed", &mMainCamera.mRotSpeed, 0.0f, 10.0f, "%.1f");
+
+			ImGui::SliderFloat("FOV", &mMainCamera.mFOV, 0.0f, 179.0f, "%.1f");
+			ImGui::DragFloat("Near", &mMainCamera.mNear, 0.1f, 0.1f, 50.0f, "%.1f");
+			ImGui::DragFloat("Far", &mMainCamera.mFar, 0.1f, 0.0f, 500.0f, "%.1f");
+
+			ImGui::TreePop();
+		}
+		
+
+		ImGui::End();
 	}
 }

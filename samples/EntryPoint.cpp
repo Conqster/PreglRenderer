@@ -1,12 +1,16 @@
 #pragma once
+#include "Core/Log.h"
 #include "Core/Application.h"
 #include "SampleGfxProgram.h"
 
+#include "SampleLightScene.h"
+
+
 int main()
 {
-	printf("Launch PreglRenderer Application Program !!!!!!!!\n");
+	DEBUG_LOG("Launch PreglRenderer Application Program !!!!!!!!");
 
-	printf("Size of Application: %d bytes\n", int(sizeof(Application)));
+
 	auto app = Application({ "PreglRenderer App", false, {1920, 1080} });
 	
 	//Add Gfx Program to run 
@@ -16,7 +20,17 @@ int main()
 	//app.AddGfxProgram(gfx);
 	//
 
-	auto gfx = new SampleGfxProgram();
+	//glm::vec3 mVector(2.0f, 1.0f, 0.0f);
+	//DEBUG_LOG_WARNING("This is crazy; " , mVector);
+	//DEBUG_LOG_ERROR("fbnfj", "esgr");
+	//DEBUG_LOG_ERROR("fbnfj", "esgr", "dsvk");
+	//DEBUG_LOG_STATUS("This is my new log");
+	//DEBUG_LOG_INFO(mVector, ", ", mVector, " = ", mVector + mVector);
+	//Debug::Log<Debug::SEVERITY::ERROR>("Lets goooooo");
+	//Debug::Log("Lets goooooo");
+
+	//auto gfx = new SampleGfxProgram();
+	auto gfx = new SampleLightingProgram();
 	gfx->OnInitialise(&app.GetDisplay());
 	gfx->SetCamera(&app.GetCamera());
 	app.AddGfxProgram(gfx);

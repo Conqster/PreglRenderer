@@ -1,6 +1,7 @@
 
 #build output 
-bin/
+#avoid bin in dependencies (libs)
+/bin/
 *.dir/
 /x64
 

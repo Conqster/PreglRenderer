@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "Core/Log.h"
 #include <fstream>
 #include <GLM/glm/glm.hpp>
 
@@ -14,8 +15,10 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 
 	
 	mID = glCreateProgram();
-	printf("The shader program '%s' ID: %d\n", mName.c_str(), mID);
+	DEBUG_LOG_STATUS("Created Shader program, name: ", mName, ", GPU ID: ", mID);
 
+	//Compilation process
+	DEBUG_LOG_STATUS("Compiling Shader ", mName, ", GPU ID : ", mID);
 	GLuint vertex_shader = CompileShader(GL_VERTEX_SHADER, vertex_code);
 	GLuint frag_shader = CompileShader(GL_FRAGMENT_SHADER, fragment_code);
 	GLuint geo_shader = (has_geometry_shader) ? CompileShader(GL_GEOMETRY_SHADER, geometry_code) : 0;
@@ -35,7 +38,7 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 	if (!result)
 	{
 		glGetProgramInfoLog(mID, sizeof(eLog), NULL, eLog);
-		printf("[ERROR VALIDATING PROGRAM (for %s)]: '%s'\n", mName.c_str(), eLog);
+		DEBUG_LOG_WARNING("[ERROR VALIDATING SHADER PROGRAM (for", mName, "]: ", eLog);
 
 
 		//need to destroy shader if compiled 
@@ -52,6 +55,7 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 	if (has_geometry_shader)
 		glDeleteShader(geo_shader);
 
+	DEBUG_LOG_STATUS("Complete Shader ", mName, ", GPU ID : ", mID, " Creation");
 	return true;
 }
 
@@ -70,6 +74,11 @@ void Shader::SetUniform1i(const char* name, int value)
 	glUniform1i(GetUniformLocation(name), value);
 }
 
+void Shader::SetUniform1f(const char* name, float value)
+{
+	glUniform1f(GetUniformLocation(name), value);
+}
+
 void Shader::SetUniformVec3(const char* name, const glm::vec3& value)
 {
 	glUniform3f(GetUniformLocation(name), value.x, value.y, value.z);
@@ -82,13 +91,13 @@ void Shader::SetUniformVec4(const char* name, const glm::vec4& value)
 
 void Shader::Clear()
 {
+	DEBUG_LOG_STATUS("Destroying Shader ", mName, "GPU ID: ", mID, ".");
 	//TO-DO: not too sure but a program could accually been 0
 	if (mID != 0)
 	{
 		glDeleteProgram(mID);
 		mID = 0;
 	}
-
 	cacheUniformLocations.clear();
 }
 
@@ -98,7 +107,7 @@ std::string Shader::ReadFile(const std::string& shader_file)
 	std::ifstream fileStream(shader_file, std::ios::in);
 	if (!fileStream.is_open())
 	{
-		printf("[Reading Shader File (for %s)]: Failed to read %s, file doesn't exist.\n", mName.c_str(), shader_file.c_str());
+		DEBUG_LOG_WARNING("[Reading Shader File (for", mName, "]: Failed to read", shader_file, ", file doesn't exist.");
 		return "";
 	}
 	std::string line = "";
@@ -131,8 +140,7 @@ unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source
 		//Error message was generic syntax error, unexpected IDENTIFIER, expecting
 		// LEFT_BRACE or COMMA or SEMICOLON.
 		glGetShaderInfoLog(shaderid, sizeof(eLog), NULL, eLog);
-		//printf("[SHADER]: Couldn't create a %s, %sSOURCE: %s\n", LogShaderTypeName2(type), eLog, GetShaderFilePath(type));
-		printf("[SHADER]: Couldn't create a shader, \n%sFile: \n%s\n", eLog, source.c_str());
+		DEBUG_LOG_WARNING("[SHADER]: Couldn't create a shader, \n", eLog, "File: \n", source);
 		
 		exit(-1);
 	}
@@ -149,7 +157,7 @@ int Shader::GetUniformLocation(const char* name)
 	int location = glGetUniformLocation(mID, name);
 
 	if (location == -1)
-		printf("[SHADER UNIFORM (WARNING) program: %s]: uniform '%s' doesn't exist!!!!!\n", mName.c_str(), name);
+		DEBUG_LOG_WARNING("[SHADER UNIFORM (WARNING) program: ", mName, " GPU ID: ", mID, "]: uniform ", name, " doesn't exist!!!!!\n");
 	else
 		cacheUniformLocations[name] = location;
 
