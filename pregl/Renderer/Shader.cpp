@@ -89,6 +89,20 @@ void Shader::SetUniformVec4(const char* name, const glm::vec4& value)
 	glUniform4f(GetUniformLocation(name), value.x, value.y, value.z, value.w);
 }
 
+void Shader::SetUniformBlockIdx(const char* name, int blockBindingIdx)
+{
+	const int idx = glGetUniformBlockIndex(mID, name);
+	glUniformBlockBinding(mID, idx, blockBindingIdx);
+
+	ShaderBlockingIdx shader_block
+	{
+		name,
+		blockBindingIdx
+	};
+	cacheBindingBlocks.push_back(shader_block);
+	DEBUG_LOG_STATUS("[SHADER - program '", mName, "' - ID ", mID, "]: Set new uniform block block name: ", shader_block.name, ", idx: ", shader_block.idx, ".");
+}
+
 void Shader::Clear()
 {
 	DEBUG_LOG_STATUS("Destroying Shader ", mName, "GPU ID: ", mID, ".");
@@ -140,7 +154,7 @@ unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source
 		//Error message was generic syntax error, unexpected IDENTIFIER, expecting
 		// LEFT_BRACE or COMMA or SEMICOLON.
 		glGetShaderInfoLog(shaderid, sizeof(eLog), NULL, eLog);
-		DEBUG_LOG_WARNING("[SHADER]: Couldn't create a shader, \n", eLog, "File: \n", source);
+		DEBUG_LOG_WARNING("[SHADER]: Couldn't create a shader, \n", eLog, "File: ", source);
 		
 		exit(-1);
 	}
@@ -157,7 +171,7 @@ int Shader::GetUniformLocation(const char* name)
 	int location = glGetUniformLocation(mID, name);
 
 	if (location == -1)
-		DEBUG_LOG_WARNING("[SHADER UNIFORM (WARNING) program: ", mName, " GPU ID: ", mID, "]: uniform ", name, " doesn't exist!!!!!\n");
+		DEBUG_LOG_WARNING("[SHADER UNIFORM (WARNING) program: ", mName, " GPU ID: ", mID, "]: uniform ", name, " doesn't exist!!!!!");
 	else
 		cacheUniformLocations[name] = location;
 

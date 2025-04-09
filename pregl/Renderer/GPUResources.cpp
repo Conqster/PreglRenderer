@@ -106,12 +106,16 @@ namespace GPUResource {
 	
 		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
 		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, ", ", mWidth, ", ", mHeight);
+		mLoaded = true;
 	}
 
 	bool Texture::GenerateFromFile(const char* file_path, bool flip_uv, TextureParameter parameter)
 	{
 		stbi_set_flip_vertically_on_load(flip_uv);
 
+
+		//mFilePath = std::string(file_path);
+		mFilePath = file_path;
 		int bit_depth;
 		unsigned char* image_buffer = stbi_load(file_path, &mWidth, &mHeight, &bit_depth, 4);
 
@@ -170,9 +174,13 @@ namespace GPUResource {
 
 	void Texture::Clear()
 	{
-		GLCall(glDeleteTextures(1, &mID));
-		mID = 0;
-		DEBUG_LOG_STATUS("[GPUResource]: Cleared Texture Object x: ", mWidth, ", ", mHeight, " From Image (Map).");
+		if (mLoaded)
+		{
+			GLCall(glDeleteTextures(1, &mID));
+			mID = 0;
+			DEBUG_LOG_STATUS("[GPUResource]: Cleared Texture Object x: ", mWidth, ", ", mHeight, " From Image (Map).");
+			mLoaded = false;
+		}
 	}
 
 
@@ -286,12 +294,17 @@ namespace GPUResource {
 
 	void Framebuffer::Delete()
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDeleteFramebuffers(1, &mID);
+		if (mID != 0)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDeleteFramebuffers(1, &mID);
 
-		glDeleteRenderbuffers(1, &mRenderbufferID);
-		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Framebuffer Deleted.");
-		mRenderTexture.Clear();
+			glDeleteRenderbuffers(1, &mRenderbufferID);
+			DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Framebuffer Deleted.");
+			mID = 0;
+			mRenderbufferID = 0;
+			mRenderTexture.Clear();
+		}
 	}
 
 	Texture Framebuffer::Delete_FBO_GetTexture()
@@ -302,6 +315,9 @@ namespace GPUResource {
 		glDeleteRenderbuffers(1, &mRenderbufferID);
 
 		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Framebuffer Deleted, and tried retriving Render Texture.");
+		
+		mID = 0;
+		mRenderbufferID = 0;
 		return mRenderTexture;
 	}
 
@@ -402,6 +418,9 @@ namespace GPUResource {
 		//TRY TO COMMENT OUT BELOW LATER 
 		// need to configure which block to bind to see BindBufferRndIdx
 		//GLCall(glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_ID, 0, size));
+
+		DEBUG_LOG_STATUS("[GPUResource - UNIFROMBUFFER]: buffer generated id: ", mID, ", size: ", (int)size);
+		mLoaded = true;
 	}
 	void UniformBuffer::Bind() const
 	{
@@ -425,9 +444,15 @@ namespace GPUResource {
 	}
 	void UniformBuffer::Delete()
 	{
-		GLCall(glDeleteBuffers(1, &mID));
+		if (mLoaded)
+		{
+			DEBUG_LOG_STATUS("[GPUResource - UNIFROMBUFFER]: deleting buffer: ", mID);
+			GLCall(glDeleteBuffers(1, &mID));
+			mLoaded = false;
+		}
 	}
 
 
 
 } //GPUResource namespace
+ 

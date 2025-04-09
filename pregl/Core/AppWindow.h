@@ -23,18 +23,18 @@ public:
 	inline bool GetVSync() const { return mVSync; }
 	void const SetVSync(bool value);
 
+private:
+	friend class Application;
 	//only friend i.e special programs can flush and swap buffer
 	void FlushAndSwapBuffer();
-	/*inline */bool ProgramWindowActive() const;
+	bool ProgramWindowActive() const;
 	void Close() const;
-private:
+
 	GLFWwindow* mWindow = nullptr;
 	std::string mName = "unk";
 
 	static unsigned int mWindowWidth;
 	static unsigned int mWindowHeight;
-
-
 
 	bool mLockCursor = true;
 	bool mVSync = true;

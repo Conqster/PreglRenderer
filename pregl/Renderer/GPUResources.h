@@ -2,7 +2,8 @@
 #include "Core/NonCopyable.h"
 
 #include <stdint.h>
-//using TexWrapMode = uint8_t;
+#include <array>
+#include <string>
 
 
 namespace GPUResource {
@@ -27,13 +28,16 @@ namespace GPUResource {
 
 		DEPTH,
 
+		RGBA16,
+
 		RGB16F,
 		RGBA16F,
 
 		RGB32F,
 		RGBA32F,
 
-		RGBA16,
+
+		COUNT,
 	};
 
 	enum class DataType : uint8_t
@@ -48,7 +52,9 @@ namespace GPUResource {
 		BASE_MAP,
 		NORMAL_MAP,
 		SHADOW_MAP,
-		RENDER
+		RENDER,
+
+		COUNT,
 	};
 
 	struct TextureParameter
@@ -60,6 +66,54 @@ namespace GPUResource {
 		TexFilterMode filterMode = TexFilterMode::LINEAR;
 		DataType pxDataType = DataType::UNSIGNED_BYTE; //pixel data data type
 	};
+
+
+	namespace Utilities {
+
+		
+		constexpr const char* TextureTypeToString(TextureType type)
+		{
+			switch (type)
+			{
+			case GPUResource::TextureType::DEFAULT:
+				return "DEFAULT";
+				break;
+			case GPUResource::TextureType::BASE_MAP:
+				return "BASE_MAP";
+				break;
+			case GPUResource::TextureType::NORMAL_MAP:
+				return "NORMAL_MAP";
+				break;
+			case GPUResource::TextureType::SHADOW_MAP:
+				return "SHADOW_MAP";
+				break;
+			case GPUResource::TextureType::RENDER:
+				return "RENDER";
+				break;
+			default:
+				return "UNKNOWN";
+				break;
+			}
+		}
+
+		static bool IsFormatFloatPoint(IMGFormat format)
+		{
+			if (format >= IMGFormat::RGBA16)
+				return true;
+			return false;
+		}
+
+		static std::array<const char*, static_cast<size_t>(TextureType::COUNT)> TextureTypesToStringArray()
+		{
+			return{ "DEFAULT", "BASE_MAP", "NORMAL_MAP", "SHADOW_MAP", "RENDER" };
+		}
+
+		static std::array<const char*, static_cast<size_t>(IMGFormat::COUNT)> ImgFormatToStringArray()
+		{
+			return { "RGB", "RGBA", "DEPTH", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F" };
+		}
+
+	} //Utilities namespace
 
 	///////////////////////////////////////////////////////////////////////////////
 	// TEXTURE
@@ -77,6 +131,7 @@ namespace GPUResource {
 
 		//hack to know if already loaded
 		bool mLoaded = false;
+		std::string mFilePath;
 	public:
 		Texture() = default;
 		Texture(unsigned int width, unsigned int height, TextureParameter parameter = {});
@@ -86,6 +141,11 @@ namespace GPUResource {
 
 		unsigned int GetID() { return mID; }
 		TextureType& GetType() { return mType; }
+		IMGFormat& GetFormat() { return mFormat; }
+		std::string& GetImgPath() { return mFilePath; }
+
+		int GetWidth() { return mWidth; }
+		int GetHeight() { return mHeight; }
 
 		void Bind() const;
 
@@ -168,6 +228,8 @@ namespace GPUResource {
 	{
 	private:
 		unsigned int mID = 0;
+		//utility flag
+		bool mLoaded = false;
 	public:
 		UniformBuffer() = default;
 		UniformBuffer(signed long long int size);

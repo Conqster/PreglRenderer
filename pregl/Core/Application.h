@@ -4,6 +4,8 @@
 #include "EditorCamera.h"
 #include <string>
 
+#include "NonCopyable.h"
+
 
 struct ApplicationSpecification
 {
@@ -22,7 +24,7 @@ struct ApplicationSpecification
 namespace InputSystem {
 	class EventHandler;
 }
-class Application
+class Application : NonCopyable
 {
 private:
 	AppWindow mDisplayManager;
@@ -31,11 +33,10 @@ private:
 	//Pointer to global static event handler
 	InputSystem::EventHandler* mPtrInputEventHandle = nullptr;
 public:
-	Application() = delete;
 	Application(const ApplicationSpecification& app_spec);
 
 	void AddGfxProgram(GraphicsProgramInterface* Gfx) { mGfxProgram = Gfx; }
-	AppWindow& GetDisplay() { return mDisplayManager; }
+	AppWindow& GetWindow() { return mDisplayManager; }
 	EditorCamera& GetCamera() { return mMainCamera; }
 
 	virtual ~Application();

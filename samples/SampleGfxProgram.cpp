@@ -1,6 +1,5 @@
 #include "SampleGfxProgram.h"
 
-#include "Renderer/Texture.h"
 #include "Core/EditorCamera.h"
 
 #include <GLM/glm/gtc/matrix_transform.hpp>
@@ -12,6 +11,8 @@
 #include "Loader/ModelLoader.h"
 
 #include "libs/imgui/imgui.h"
+
+#include "Renderer/GPUResources.h"
 
 
 using namespace InputSystem;
@@ -42,9 +43,9 @@ void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 	printf("maximum vertices: %d\n", int(max_vertices));
 
 	//mBrickTexture = new Texture("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
-	mBrickTexture = new Texture("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
-	mCheckersTexture = new Texture("assets/textures/test_checkers.jpg", true);
-	mPlainTexture = new Texture("assets/textures/plain64.png", true);
+	mBrickTexture = new GPUResource::Texture("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
+	mCheckersTexture = new GPUResource::Texture("assets/textures/test_checkers.jpg", true);
+	mPlainTexture = new GPUResource::Texture("assets/textures/plain64.png", true);
 
 
 
@@ -57,7 +58,7 @@ void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 	mSpherePrimitive = Util::CreateSphere();
 	mTrianglePrimitive = Loader::LoadMesh("assets/meshes/triangle.rmesh");
 
-	mShadowMapFBO.Generate();
+	mShadowMapFBO.Generate(4096);
 
 
 	CreateEntities();

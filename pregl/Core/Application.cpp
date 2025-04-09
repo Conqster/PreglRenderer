@@ -16,9 +16,11 @@
 
 //using imgui
 #if USE_IMGUI
-	#include "libs/imgui/imgui.h"
-	#include "libs/imgui/imgui_impl_glfw.h"
-	#include "libs/imgui/imgui_impl_opengl3.h"
+	#include <libs/imgui/imgui.h>
+	#include <libs/imgui/imgui_impl_glfw.h>
+	#include <libs/imgui/imgui_impl_opengl3.h>
+
+	#include "Core/UI_Window_Panel_Editors.h"
 #endif // USE_IMGUI
 
 #include "Log.h"
@@ -49,6 +51,9 @@ Application::Application(const ApplicationSpecification& app_spec)
 		//ImGui Renderer
 		ImGui_ImplGlfw_InitForOpenGL(mDisplayManager.GetWindow(), true);
 		ImGui_ImplOpenGL3_Init("#version 400");
+
+		//UI functions
+		UI::Initialise();
 #endif // USE_IMGUI
 
 
@@ -62,6 +67,7 @@ Application::Application(const ApplicationSpecification& app_spec)
 
 Application::~Application()
 {
+	DEBUG_LOG("Closing Application");
 	if (mGfxProgram)
 	{
 		mGfxProgram->OnDestroy();
@@ -72,6 +78,9 @@ Application::~Application()
 
 	//Shut down UI (ImGui)
 #if USE_IMGUI
+	//UI function
+	UI::ShutDown();
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -94,7 +103,6 @@ void Application::Run()
 		static float loop_time = 0.0f;
 		//SCOPE_TIME("Apploop");
 		SCOPE_TIME("Main Loop", &loop_time);
-
 
 		double curr_frame_time = glfwGetTime();
 		mFrameDeltaTime = curr_frame_time - mLastFrameTime;
@@ -122,6 +130,7 @@ void Application::Run()
 		UpdateMainCamera(mFrameDeltaTime);
 
 
+		DebugGizmosRenderer::Instance().SendBatchesToGPU(mMainCamera, mDisplayManager.GetAspectRatio());
 		//UI STUFFS(IMGUI)
 #if USE_IMGUI
 		ImGui_ImplOpenGL3_NewFrame();
@@ -139,9 +148,7 @@ void Application::Run()
 #endif // USE_IMGUI
 
 
-
 		//Resolve frame
-		DebugGizmosRenderer::Instance().SendBatchesToGPU(mMainCamera, mDisplayManager.GetAspectRatio());
 		if (mPtrInputEventHandle)
 			mPtrInputEventHandle->FlushFrameInputs();
 		mDisplayManager.FlushAndSwapBuffer();
@@ -179,7 +186,7 @@ void Application::UpdateMainCamera(float dt)
 
 void Application::ApplicationUI()
 {
-	//ImGui::ShowDemoWindow();
+	ImGui::ShowDemoWindow();
 	if (ImGui::Begin("Sample Gfx Program"))
 	{
 		ImGui::SeparatorText("PreglRenderer App");

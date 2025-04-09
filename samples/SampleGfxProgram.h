@@ -7,12 +7,17 @@
 #include "Renderer/Shader.h"
 #include "Renderer/GPUVertexData.h"
 
+#include "Renderer/GPUResources.h"
+
 struct Light
 {
 	glm::vec3 direction;
 	glm::vec3 colour;
 };
 
+namespace GPUResource {
+	class Texture;
+}
 class Texture;
 class SampleGfxProgram : public GraphicsProgramInterface
 {
@@ -33,7 +38,7 @@ private:
 
 	glm::vec4 mClearColour = glm::vec4(0.0f, 0.0f, 0.5f, 1.0f);
 
-	ShadowMap mShadowMapFBO;
+	GPUResource::ShadowMap mShadowMapFBO;
 	Shader mShadowShader;
 	glm::vec3 mLightWorldPos = glm::vec3(10.0f, 40.0f, 0.0f);
 	glm::mat4 mLightProjViewMat = glm::mat4(1.0f);
@@ -60,7 +65,7 @@ private:
 	std::vector<RenderableEntity> mEntities;
 	void CreateEntities();
 
-	Texture* mBrickTexture = nullptr;
-	Texture* mCheckersTexture = nullptr;
-	Texture* mPlainTexture = nullptr;
+	GPUResource::Texture* mBrickTexture = nullptr;
+	GPUResource::Texture* mCheckersTexture = nullptr;
+	GPUResource::Texture* mPlainTexture = nullptr;
 };

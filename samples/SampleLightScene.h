@@ -80,8 +80,8 @@ private:
 	float mPreviewAmbientRatio = 0.4f;
 	Shader mPreviewShader;
 	glm::mat4 mPreviewTransform = glm::mat4(1.0f);
-	void MaterialEditorUIWindow();
-	bool Ext_QuatEditorPanel(glm::mat4& transform, ImVec2 top_left, ImVec2 size);
+	//void MaterialEditorUIWindow();
+	//bool Ext_QuatEditorPanel(glm::mat4& transform, ImVec2 top_left, ImVec2 size);
 
 	//Utility 
 	std::shared_ptr<GPUResource::Texture> mErrorTex = nullptr;

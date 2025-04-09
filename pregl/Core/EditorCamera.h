@@ -41,7 +41,7 @@ private:
 public:
 	float mMoveSpeed = 100.0f;
 	float mRotSpeed = 5.0f;
-
+	
 	float mFOV = 60.0f;
 	float mNear = 0.1f;
 	float mFar = 150.0f;

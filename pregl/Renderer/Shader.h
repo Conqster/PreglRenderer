@@ -5,6 +5,15 @@
 #include <GL/glew.h>
 #include <GLM/glm/glm.hpp>
 
+
+struct ShaderBlockingIdx
+{
+	std::string name;
+	unsigned int idx;
+
+	//a compare operator to check two block
+};
+
 class Shader
 {
 public:
@@ -18,12 +27,16 @@ public:
 	void SetUniform1f(const char* name, float value);
 	void SetUniformVec3(const char* name, const glm::vec3& value);
 	void SetUniformVec4(const char* name, const glm::vec4& value);
+	void SetUniformBlockIdx(const char* name, int blockBindingIdx = 0);
+
+	std::vector<ShaderBlockingIdx> GetBindingBlocks() const { return cacheBindingBlocks; }
 
 	void Clear();
 private:
 	unsigned int mID = 0;
 	std::string mName = "unk";
 	std::unordered_map<std::string, int> cacheUniformLocations = std::unordered_map<std::string, int>();
+	std::vector<ShaderBlockingIdx> cacheBindingBlocks = std::vector<ShaderBlockingIdx>();
 
 	std::string ReadFile(const std::string& shader_file);
 

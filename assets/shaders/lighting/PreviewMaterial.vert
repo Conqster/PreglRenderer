@@ -24,7 +24,6 @@ out VS_OUT
 }vs_out;
 
 uniform mat4 uModel;
-uniform mat4 uLightSpaceMat;
 
 void main()
 {

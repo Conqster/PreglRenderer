@@ -18,6 +18,8 @@
 
 #include "Renderer/DebugGizmosRenderer.h"
 
+#include "Core/UI_Window_Panel_Editors.h"
+
 void SampleLightingProgram::OnInitialise(AppWindow* display_window)
 {
 	display_window->ChangeWindowTitle("Lighting Program Model");
@@ -164,10 +166,16 @@ void SampleLightingProgram::OnDestroy()
 
 void SampleLightingProgram::OnUI()
 {
-	//MainSceneUIEditor();
-	MaterialEditorUIWindow();
-	//SceneObjectTransformEditorUI();
-	//LightShaderUtilityEditor();
+
+	static UI::Windows::MaterialList mMaterialList{
+		mSphereMaterial,
+		mQuadMaterial,
+		mCubeMaterial,
+	};
+	UI::Windows::MaterialsEditor(mMaterialList);
+
+	UI::Windows::SingleTextureEditor(*mQuadMaterial->diffuseMap);
+
 }
 
 
@@ -191,7 +199,7 @@ void SampleLightingProgram::CreateObjects()
 	mSphereMaterial = std::make_shared<BaseMaterial>();
 	mSphereMaterial->name = "Sphere_Mat";
 	mCubeMaterial = std::make_shared<BaseMaterial>();
-	mCubeMaterial->name = "Cube_Mat";
+	mCubeMaterial->name = "Cube_Mat_test";
 
 
 	mQuadMaterial->ambient = glm::vec3(0.0468f, 0.3710993f, 0.07421f);
@@ -456,203 +464,203 @@ void SampleLightingProgram::MainSceneUIEditor()
 		ImGui::End();
 	}
 }
-
-void SampleLightingProgram::MaterialEditorUIWindow()
-{
-	static bool update_preview_fbo = true;
-	static int mesh_id = 0;
-	static Lighting::Directional preview_lighting = Lighting::Directional(glm::vec3(-1.0f, 1.0f, -1.0f), glm::vec3(1.0f), glm::vec3(1.0), glm::vec3(1.0f));
-
-
-	if (update_preview_fbo)
-	{
-		mMaterialPreviewFBO.Bind();
-		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		//Update camera 
-		float aspect_ratio = mMaterialPreviewFBO.GetHeight() / mMaterialPreviewFBO.GetWidth();
-		UpdateCameraUBO(mMaterialPreviewCam, aspect_ratio);
-		//tranform matrix later
-		mPreviewShader.Bind();
-		//with the hope that other parameter are updated like 
-		//the lighting in  
-		mPreviewShader.SetUniformMat4("uModel", mPreviewTransform);
-		//m_Shader.SetUniform1i("u_OnlyBaseColour", !b_MaterialPreviewLighting);
-		mPreviewShader.SetUniform1i("uPhongRendering", !mPtrPreviewMaterial.lock()->blinn_phong);
-		//---------directional Light-------------------
-		mPreviewShader.SetUniformVec3("uDirectionalLight.direction", preview_lighting.direction);
-		//diffuse
-		mPreviewShader.SetUniformVec3("uDirectionalLight.diffuse", preview_lighting.base.diffuse);
-		//ambient
-		mPreviewShader.SetUniformVec3("uDirectionalLight.ambient", preview_lighting.base.ambient);
-		//specular
-		mPreviewShader.SetUniformVec3("uDirectionalLight.specular", preview_lighting.base.specular);
-		mPreviewShader.SetUniform1i("uDirectionalLight.enable", preview_lighting.base.enable);
-		mPreviewShader.SetUniform1f("uAmbientRatio", mPreviewAmbientRatio);
-		if (mPtrPreviewMaterial.lock()->diffuseMap)
-			mPtrPreviewMaterial.lock()->diffuseMap->Activate();
-		else
-			mErrorTex->Activate();
-		mPreviewShader.SetUniform1i("uDirectionalLight.enable", mDirLight.base.enable);
-		MaterialShaderHelper(mPreviewShader, *mPtrPreviewMaterial.lock());
-
-		auto preview_mesh = mSphereMesh;
-		if (mesh_id == 1)
-			preview_mesh = mQuadMesh;
-		else if (mesh_id == 2)
-			preview_mesh = mCubeMesh;
-
-		preview_mesh->Draw();
-
-		mMaterialPreviewFBO.UnBind();
-		update_preview_fbo = false;
-		glViewport(0, 0, mDisplayManager->GetWidth(), mDisplayManager->GetHeight());
-	}
-
-	if (ImGui::Begin("Materials Editor"))
-	{
-		ImVec2 ui_win_size = ImGui::GetWindowSize();
-		ImVec2 preview_panel_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
-		preview_panel_size.y *= (mMaterialPreviewFBO.GetHeight() / mMaterialPreviewFBO.GetWidth()); //invert
-
-		ImVec2 top_left = ImGui::GetCursorPos();
-		ImGui::Image((ImTextureID)(intptr_t)mMaterialPreviewFBO.GetRenderTextureGPU_ID(),
-					preview_panel_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
-		update_preview_fbo |= Ext_QuatEditorPanel(mPreviewTransform, top_left, preview_panel_size);
-
-
-		ImGui::SameLine();
-		ImGui::BeginChild("##mesh_type", ImVec2(preview_panel_size.x * 0.75f, preview_panel_size.y * 0.5f));
-		const char* mesh_type[] = { "Sphere", "Quad", "Cube" };
-		update_preview_fbo |= ImGui::Combo("Preview Mesh", &mesh_id, mesh_type, 3);
-		ImGui::EndChild();
-
-		//material properties
-		auto& mat = mPtrPreviewMaterial.lock();
-		ImGui::Text(mat->name);
-		//update_preview_fbo |= ImGui::Checkbox("Preview Lighting or Base colour", &b_MaterialPreviewLighting);
-		update_preview_fbo |= ImGui::Checkbox("Blinn-Phong", &mat->blinn_phong);
-		update_preview_fbo |= ImGui::ColorEdit3("Diffuse", &mat->diffuse[0]);
-		update_preview_fbo |= ImGui::ColorEdit3("Ambient", &mat->ambient[0]);
-		update_preview_fbo |= ImGui::ColorEdit3("Specular", &mat->specular[0]);
-		update_preview_fbo |= ImGui::SliderFloat("Shinness", &mat->shinness, 8.0f, 256.0f, "%.0f");
-		update_preview_fbo |= ImGui::SliderFloat("Ambinent Ratio", &mPreviewAmbientRatio, 0.0f, 1.0f, "%.1f");
-		//diffuse map
-		int tex_id = (mat->diffuseMap) ? mat->diffuseMap->GetID() : mErrorTex->GetID();
-		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
-		ImGui::SameLine(); ImGui::Text("Diffuse Map");
-		//normal map
-		tex_id = (mat->normalMap) ? mat->normalMap->GetID() : mErrorTex->GetID();
-		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
-		ImGui::SameLine(); ImGui::Text("Normal Map");
-		//specular map
-		tex_id = (mat->specularMap) ? mat->specularMap->GetID() : mErrorTex->GetID();
-		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
-		ImGui::SameLine(); ImGui::Text("Specular Map");
-
-		//list all materials
-		if (ImGui::Button("Sphere Material"))
-		{
-			mPtrPreviewMaterial = mSphereMaterial;
-			update_preview_fbo |= true;
-		}
-		if (ImGui::Button("Quad Material"))
-		{
-			mPtrPreviewMaterial = mQuadMaterial;
-			update_preview_fbo |= true;
-		}
-		if (ImGui::Button("Cube Material"))
-		{
-			mPtrPreviewMaterial = mCubeMaterial;
-			update_preview_fbo |= true;
-		}
-
-
-		if (ImGui::TreeNode("Preview DirectionalLight"))
-		{
-			update_preview_fbo |= ImGui::Checkbox("Enable", &preview_lighting.base.enable);
-			update_preview_fbo |= ImGui::DragFloat3("Light Direction", &preview_lighting.direction[0], 0.1f, -1.0f, 1.0f);
-			update_preview_fbo |= ImGui::ColorEdit3("Diffuse colour", &preview_lighting.base.diffuse[0]);
-			update_preview_fbo |= ImGui::ColorEdit3("Ambient colour", &preview_lighting.base.ambient[0]);
-			update_preview_fbo |= ImGui::ColorEdit3("Specular colour", &preview_lighting.base.specular[0]);
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNode("Preview Camera"))
-		{
-			static bool update_cam = false;
-
-			update_cam |= ImGui::SliderFloat("FOV", &mMaterialPreviewCam.mFOV, 0.0f, 179.0f, "%.1f");
-			update_cam |= ImGui::DragFloat("Near", &mMaterialPreviewCam.mNear, 0.1f, 0.1f, 50.0f, "%.1f");
-			update_cam |= ImGui::DragFloat("Far", &mMaterialPreviewCam.mFar, 0.1f, 0.0f, 500.0f, "%.1f");
-
-			glm::vec3 pos = mMaterialPreviewCam.GetPosition();
-			if (update_cam |= ImGui::DragFloat3("Position", &pos[0], 0.1f))
-				mMaterialPreviewCam.SetPosition(pos);
-
-			update_cam |= ImGui::SliderFloat("Yaw", &mMaterialPreviewCam.mYaw, 0.0f, 360.0f);
-			update_cam |= ImGui::SliderFloat("Pitch", &mMaterialPreviewCam.mPitch, 0.0f, 360.0f);
-			
-			//quick hack
-			if (update_cam)
-				mMaterialPreviewCam.SetPosition(pos);
-
-			update_preview_fbo |= update_cam;
-
-			ImGui::TreePop();
-		}
-
-		ImGui::End();
-	}
-}
-
-bool SampleLightingProgram::Ext_QuatEditorPanel(glm::mat4& transform, ImVec2 top_left, ImVec2 size)
-{
-	glm::quat quat = glm::quat_cast(transform);
-
-
-	ImVec2 ui_win_size = ImGui::GetWindowSize();
-	//ImVec2 drag_panel_size = ImVec2(200, 200);
-	ImVec2 drag_panel_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
-	static float drag_senstitivity = 0.001f;
-	static int drag_speed = 5;
-	static bool invert_x = false;
-	static bool invert_y = false;
-
-
-	//need location
-	ImGui::SetCursorPos(top_left);
-	ImGui::InvisibleButton("##quat_editor", size);
-
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-	ImVec2 min = ImGui::GetItemRectMin();
-	ImVec2 max = ImGui::GetItemRectMax();
-	draw_list->AddRect(min, max, IM_COL32(255, 255, 255, 255));
-
-
-	//mouse drag
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
-	{
-		draw_list->AddRect(min, max, IM_COL32(0, 0, 255, 255));
-		ImVec2 dt_drag = ImGui::GetMouseDragDelta();
-
-		//dt drag -> rot angle
-		float dt_x = dt_drag.x * drag_senstitivity * drag_speed;// *(invert_x) ? -1.0f : 1.0f;
-		float dt_y = dt_drag.y * drag_senstitivity * drag_speed;
-
-		dt_x *= (invert_x) ? -1.0f : 1.0f;
-		dt_y *= (invert_y) ? 1.0f : -1.0f;
-
-		glm::quat rot_x = glm::angleAxis(dt_y, glm::vec3(1.0f, 0.0f, 0.0f));
-		glm::quat rot_y = glm::angleAxis(dt_x, glm::vec3(0.0f, 1.0f, 0.0f));
-
-		quat = glm::normalize(rot_y * rot_x * quat);
-
-		transform = glm::mat4_cast(quat);
-
-		ImGui::ResetMouseDragDelta();
-		return true;
-	}
-
-	return false;
-}
+//
+//void SampleLightingProgram::MaterialEditorUIWindow()
+//{
+//	static bool update_preview_fbo = true;
+//	static int mesh_id = 0;
+//	static Lighting::Directional preview_lighting = Lighting::Directional(glm::vec3(-1.0f, 1.0f, -1.0f), glm::vec3(1.0f), glm::vec3(1.0), glm::vec3(1.0f));
+//
+//
+//	if (update_preview_fbo)
+//	{
+//		mMaterialPreviewFBO.Bind();
+//		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+//		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//		//Update camera 
+//		float aspect_ratio = mMaterialPreviewFBO.GetHeight() / mMaterialPreviewFBO.GetWidth();
+//		UpdateCameraUBO(mMaterialPreviewCam, aspect_ratio);
+//		//tranform matrix later
+//		mPreviewShader.Bind();
+//		//with the hope that other parameter are updated like 
+//		//the lighting in  
+//		mPreviewShader.SetUniformMat4("uModel", mPreviewTransform);
+//		//m_Shader.SetUniform1i("u_OnlyBaseColour", !b_MaterialPreviewLighting);
+//		mPreviewShader.SetUniform1i("uPhongRendering", !mPtrPreviewMaterial.lock()->blinn_phong);
+//		//---------directional Light-------------------
+//		mPreviewShader.SetUniformVec3("uDirectionalLight.direction", preview_lighting.direction);
+//		//diffuse
+//		mPreviewShader.SetUniformVec3("uDirectionalLight.diffuse", preview_lighting.base.diffuse);
+//		//ambient
+//		mPreviewShader.SetUniformVec3("uDirectionalLight.ambient", preview_lighting.base.ambient);
+//		//specular
+//		mPreviewShader.SetUniformVec3("uDirectionalLight.specular", preview_lighting.base.specular);
+//		mPreviewShader.SetUniform1i("uDirectionalLight.enable", preview_lighting.base.enable);
+//		mPreviewShader.SetUniform1f("uAmbientRatio", mPreviewAmbientRatio);
+//		if (mPtrPreviewMaterial.lock()->diffuseMap)
+//			mPtrPreviewMaterial.lock()->diffuseMap->Activate();
+//		else
+//			mErrorTex->Activate();
+//		mPreviewShader.SetUniform1i("uDirectionalLight.enable", mDirLight.base.enable);
+//		MaterialShaderHelper(mPreviewShader, *mPtrPreviewMaterial.lock());
+//
+//		auto preview_mesh = mSphereMesh;
+//		if (mesh_id == 1)
+//			preview_mesh = mQuadMesh;
+//		else if (mesh_id == 2)
+//			preview_mesh = mCubeMesh;
+//
+//		preview_mesh->Draw();
+//
+//		mMaterialPreviewFBO.UnBind();
+//		update_preview_fbo = false;
+//		glViewport(0, 0, mDisplayManager->GetWidth(), mDisplayManager->GetHeight());
+//	}
+//
+//	if (ImGui::Begin("Materials Editor"))
+//	{
+//		ImVec2 ui_win_size = ImGui::GetWindowSize();
+//		ImVec2 preview_panel_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
+//		preview_panel_size.y *= (mMaterialPreviewFBO.GetHeight() / mMaterialPreviewFBO.GetWidth()); //invert
+//
+//		ImVec2 top_left = ImGui::GetCursorPos();
+//		ImGui::Image((ImTextureID)(intptr_t)mMaterialPreviewFBO.GetRenderTextureGPU_ID(),
+//					preview_panel_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+//		update_preview_fbo |= Ext_QuatEditorPanel(mPreviewTransform, top_left, preview_panel_size);
+//
+//
+//		ImGui::SameLine();
+//		ImGui::BeginChild("##mesh_type", ImVec2(preview_panel_size.x * 0.75f, preview_panel_size.y * 0.5f));
+//		const char* mesh_type[] = { "Sphere", "Quad", "Cube" };
+//		update_preview_fbo |= ImGui::Combo("Preview Mesh", &mesh_id, mesh_type, 3);
+//		ImGui::EndChild();
+//
+//		//material properties
+//		auto& mat = mPtrPreviewMaterial.lock();
+//		ImGui::Text(mat->name);
+//		//update_preview_fbo |= ImGui::Checkbox("Preview Lighting or Base colour", &b_MaterialPreviewLighting);
+//		update_preview_fbo |= ImGui::Checkbox("Blinn-Phong", &mat->blinn_phong);
+//		update_preview_fbo |= ImGui::ColorEdit3("Diffuse", &mat->diffuse[0]);
+//		update_preview_fbo |= ImGui::ColorEdit3("Ambient", &mat->ambient[0]);
+//		update_preview_fbo |= ImGui::ColorEdit3("Specular", &mat->specular[0]);
+//		update_preview_fbo |= ImGui::SliderFloat("Shinness", &mat->shinness, 8.0f, 256.0f, "%.0f");
+//		update_preview_fbo |= ImGui::SliderFloat("Ambinent Ratio", &mPreviewAmbientRatio, 0.0f, 1.0f, "%.1f");
+//		//diffuse map
+//		int tex_id = (mat->diffuseMap) ? mat->diffuseMap->GetID() : mErrorTex->GetID();
+//		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
+//		ImGui::SameLine(); ImGui::Text("Diffuse Map");
+//		//normal map
+//		tex_id = (mat->normalMap) ? mat->normalMap->GetID() : mErrorTex->GetID();
+//		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
+//		ImGui::SameLine(); ImGui::Text("Normal Map");
+//		//specular map
+//		tex_id = (mat->specularMap) ? mat->specularMap->GetID() : mErrorTex->GetID();
+//		ImGui::Image((ImTextureID)(intptr_t)tex_id, ImVec2(100, 100));
+//		ImGui::SameLine(); ImGui::Text("Specular Map");
+//
+//		//list all materials
+//		if (ImGui::Button("Sphere Material"))
+//		{
+//			mPtrPreviewMaterial = mSphereMaterial;
+//			update_preview_fbo |= true;
+//		}
+//		if (ImGui::Button("Quad Material"))
+//		{
+//			mPtrPreviewMaterial = mQuadMaterial;
+//			update_preview_fbo |= true;
+//		}
+//		if (ImGui::Button("Cube Material"))
+//		{
+//			mPtrPreviewMaterial = mCubeMaterial;
+//			update_preview_fbo |= true;
+//		}
+//
+//
+//		if (ImGui::TreeNode("Preview DirectionalLight"))
+//		{
+//			update_preview_fbo |= ImGui::Checkbox("Enable", &preview_lighting.base.enable);
+//			update_preview_fbo |= ImGui::DragFloat3("Light Direction", &preview_lighting.direction[0], 0.1f, -1.0f, 1.0f);
+//			update_preview_fbo |= ImGui::ColorEdit3("Diffuse colour", &preview_lighting.base.diffuse[0]);
+//			update_preview_fbo |= ImGui::ColorEdit3("Ambient colour", &preview_lighting.base.ambient[0]);
+//			update_preview_fbo |= ImGui::ColorEdit3("Specular colour", &preview_lighting.base.specular[0]);
+//			ImGui::TreePop();
+//		}
+//
+//		if (ImGui::TreeNode("Preview Camera"))
+//		{
+//			static bool update_cam = false;
+//
+//			update_cam |= ImGui::SliderFloat("FOV", &mMaterialPreviewCam.mFOV, 0.0f, 179.0f, "%.1f");
+//			update_cam |= ImGui::DragFloat("Near", &mMaterialPreviewCam.mNear, 0.1f, 0.1f, 50.0f, "%.1f");
+//			update_cam |= ImGui::DragFloat("Far", &mMaterialPreviewCam.mFar, 0.1f, 0.0f, 500.0f, "%.1f");
+//
+//			glm::vec3 pos = mMaterialPreviewCam.GetPosition();
+//			if (update_cam |= ImGui::DragFloat3("Position", &pos[0], 0.1f))
+//				mMaterialPreviewCam.SetPosition(pos);
+//
+//			update_cam |= ImGui::SliderFloat("Yaw", &mMaterialPreviewCam.mYaw, 0.0f, 360.0f);
+//			update_cam |= ImGui::SliderFloat("Pitch", &mMaterialPreviewCam.mPitch, 0.0f, 360.0f);
+//			
+//			//quick hack
+//			if (update_cam)
+//				mMaterialPreviewCam.SetPosition(pos);
+//
+//			update_preview_fbo |= update_cam;
+//
+//			ImGui::TreePop();
+//		}
+//
+//		ImGui::End();
+//	}
+//}
+//
+//bool SampleLightingProgram::Ext_QuatEditorPanel(glm::mat4& transform, ImVec2 top_left, ImVec2 size)
+//{
+//	glm::quat quat = glm::quat_cast(transform);
+//
+//
+//	ImVec2 ui_win_size = ImGui::GetWindowSize();
+//	//ImVec2 drag_panel_size = ImVec2(200, 200);
+//	ImVec2 drag_panel_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
+//	static float drag_senstitivity = 0.001f;
+//	static int drag_speed = 5;
+//	static bool invert_x = false;
+//	static bool invert_y = false;
+//
+//
+//	//need location
+//	ImGui::SetCursorPos(top_left);
+//	ImGui::InvisibleButton("##quat_editor", size);
+//
+//	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+//	ImVec2 min = ImGui::GetItemRectMin();
+//	ImVec2 max = ImGui::GetItemRectMax();
+//	draw_list->AddRect(min, max, IM_COL32(255, 255, 255, 255));
+//
+//
+//	//mouse drag
+//	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0))
+//	{
+//		draw_list->AddRect(min, max, IM_COL32(0, 0, 255, 255));
+//		ImVec2 dt_drag = ImGui::GetMouseDragDelta();
+//
+//		//dt drag -> rot angle
+//		float dt_x = dt_drag.x * drag_senstitivity * drag_speed;// *(invert_x) ? -1.0f : 1.0f;
+//		float dt_y = dt_drag.y * drag_senstitivity * drag_speed;
+//
+//		dt_x *= (invert_x) ? -1.0f : 1.0f;
+//		dt_y *= (invert_y) ? 1.0f : -1.0f;
+//
+//		glm::quat rot_x = glm::angleAxis(dt_y, glm::vec3(1.0f, 0.0f, 0.0f));
+//		glm::quat rot_y = glm::angleAxis(dt_x, glm::vec3(0.0f, 1.0f, 0.0f));
+//
+//		quat = glm::normalize(rot_y * rot_x * quat);
+//
+//		transform = glm::mat4_cast(quat);
+//
+//		ImGui::ResetMouseDragDelta();
+//		return true;
+//	}
+//
+//	return false;
+//}

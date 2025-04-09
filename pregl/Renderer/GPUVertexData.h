@@ -53,19 +53,3 @@ struct RenderableEntity
 
 
 
-class ShadowMap
-{
-public:
-	ShadowMap() = default;
-	ShadowMap(unsigned int in_size);
-	void Generate();
-	void Write();
-	virtual void Read(unsigned int slot = 0);
-	inline unsigned int GetColourAttachment() { return mColourAttachment; }
-
-	void Destroy();
-private:
-	unsigned int mSize = 4096;
-	unsigned int mID = 0;
-	unsigned int mColourAttachment = 0;
-};
