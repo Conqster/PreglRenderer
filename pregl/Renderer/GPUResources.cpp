@@ -74,29 +74,55 @@ namespace GPUResource {
 	// TEXTURE
 	///////////////////////////////////////////////////////////////////////////////
 	Texture::Texture(unsigned int width, unsigned int height, TextureParameter parameter) :
-					mWidth(width), mHeight(height), mFormat(parameter.imgFormat)
+					mWidth(width), mHeight(height), mInternalFormat(parameter.imgInternalFormat)
 	{
-		Generate(width, height, parameter);
+		Generate(width, height, nullptr, parameter);
 		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object x: ", width, ", ", height);
 	}
 
-	void Texture::Generate(unsigned int width, unsigned int height, TextureParameter parameter)
+	Texture::Texture(unsigned int width, unsigned int height, const void* pixels_data, TextureParameter parameter)
+	{
+		Generate(width, height, pixels_data, parameter);
+		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object with pixel data x: ", width, ", ", height);
+	}
+
+	void Texture::Generate(unsigned int width, unsigned int height, const void* pixels_data, TextureParameter parameter)
 	{
 
 		mWidth = width;
 		mHeight = height;
-		mFormat = parameter.imgFormat;
-		mType = parameter.textureType;
+
+		//quick check 
+		if (parameter.useEqualFormat)
+			parameter.format = parameter.imgInternalFormat;
 
 
 		//check if its already generated on GPU 
 		if (mLoaded)
+		{
 			DEBUG_LOG_WARNING("[GPUResource - Texture]: Texture already loaded.");
+			//void* old_px_data = nullptr;
+			//void* old_px_data = new unsigned char[mWidth * mHeight * Utilities::IMGFormatChannelCount(mParameter.imgInternalFormat)];
+			void* old_px_data = RetrieveGPUImageBuffer();
+			//RetrieveGPUImageBuffer(old_px_data);
+			GLCall(glBindTexture(GL_TEXTURE_2D, mID));
+			//glGetTexImage(GL_TEXTURE_2D, 0, ToOpenGL::Format(mParameter.imgInternalFormat), ToOpenGL::Type(mParameter.pxDataType), old_px_data);
+			GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(parameter.imgInternalFormat), width, height, 0, ToOpenGL::Format(parameter.format), ToOpenGL::Type(parameter.pxDataType), old_px_data));
+			//if (old_px_data)
+				//delete old_px_data;
+		}
 		else
+		{
 			GLCall(glGenTextures(1, &mID));
+			GLCall(glBindTexture(GL_TEXTURE_2D, mID)); 
+			GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(parameter.imgInternalFormat), width, height, 0, ToOpenGL::Format(parameter.format), ToOpenGL::Type(parameter.pxDataType), pixels_data));
+		}
 
-		GLCall(glBindTexture(GL_TEXTURE_2D, mID));
-		GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(mFormat), width, height, 0, ToOpenGL::Format(mFormat), ToOpenGL::Type(parameter.pxDataType), nullptr));
+		mInternalFormat = parameter.imgInternalFormat;
+		mType = parameter.textureType;
+		mParameter = parameter; //<- update parameter (??? after GPU retrival if needed)
+
+
 		//wrap
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ToOpenGL::TexWrap(parameter.wrapMode)));
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ToOpenGL::TexWrap(parameter.wrapMode)));
@@ -105,7 +131,8 @@ namespace GPUResource {
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, ToOpenGL::TexFilter(parameter.filterMode)));
 	
 		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
-		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, ", ", mWidth, ", ", mHeight);
+		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, " , ", mWidth, " , ", mHeight);
+
 		mLoaded = true;
 	}
 
@@ -116,6 +143,7 @@ namespace GPUResource {
 
 		//mFilePath = std::string(file_path);
 		mFilePath = file_path;
+		mParameter = parameter;
 		int bit_depth;
 		unsigned char* image_buffer = stbi_load(file_path, &mWidth, &mHeight, &bit_depth, 4);
 
@@ -126,13 +154,17 @@ namespace GPUResource {
 			return false;
 		}
 
-		mFormat = parameter.imgFormat;
+		mInternalFormat = parameter.imgInternalFormat;
 		mType = parameter.textureType;
 		//check if its already generated on GPU 
 		if (mLoaded)
+		{
 			DEBUG_LOG_WARNING("[GPUResource - Texture]: Texture already loaded.");
+		}
 		else
+		{
 			GLCall(glGenTextures(1, &mID));
+		}
 		glBindTexture(GL_TEXTURE_2D, mID);
 
 		//wrap
@@ -142,8 +174,15 @@ namespace GPUResource {
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ToOpenGL::TexFilter(parameter.filterMode)));
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, ToOpenGL::TexFilter(parameter.filterMode)));
 
-		GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(mFormat), mWidth, mHeight, 0, ToOpenGL::Format(mFormat), ToOpenGL::Type(parameter.pxDataType), image_buffer));
-
+		if (parameter.useEqualFormat)
+		{
+			GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(mInternalFormat), mWidth, mHeight, 0, ToOpenGL::Format(mInternalFormat), ToOpenGL::Type(parameter.pxDataType), image_buffer));
+		}
+		else
+		{
+			GLCall(glTexImage2D(GL_TEXTURE_2D, 0, ToOpenGL::Format(mInternalFormat), mWidth, mHeight, 0, ToOpenGL::Format(parameter.format), ToOpenGL::Type(parameter.pxDataType), image_buffer));
+		}
+		
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
@@ -151,9 +190,29 @@ namespace GPUResource {
 		if (image_buffer)
 			stbi_image_free(image_buffer);
 
-		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, ", ", mWidth, ", ", mHeight);
+		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, " , ", mWidth, " , ", mHeight);
 		mLoaded = true;
 		return true;
+	}
+
+	//void Texture::RetrieveGPUImageBuffer(void*& ptr_img_buffer)
+	unsigned char* Texture::RetrieveGPUImageBuffer()
+	{
+		//need to know previous texture image data not incoming data 
+		if (mLoaded)
+		{
+			//unsigned char* img_buffer = new unsigned char[mWidth * mHeight * Utilities::IMGFormatChannelCount(mParameter.imgInternalFormat)];
+			//unsigned char* img_buffer;
+			unsigned char* img_buffer = new unsigned char[sizeof(float) * mWidth * mHeight * Utilities::IMGFormatChannelCount(mParameter.imgInternalFormat)];
+			Bind();
+			//glGetTexImage(GL_TEXTURE_2D, 0, ToOpenGL::Format(mParameter.imgInternalFormat), ToOpenGL::Type(mParameter.pxDataType), (void*)img_buffer);
+			GLCall(glGetTexImage(GL_TEXTURE_2D, 0, ToOpenGL::Format(mParameter.imgInternalFormat), ToOpenGL::Type(mParameter.pxDataType), img_buffer));
+			DEBUG_LOG_STATUS("[TEXTURE ID ", mID, "]: Successfully retrived texture image from GPU Texture buffer. Width: ", mWidth, ", Height: ", mHeight, ".");
+			return img_buffer;
+			Disactivate();
+		}
+		DEBUG_LOG_WARNING("[TEXTURE]: Trying to access GPU texture image data that does not exist");
+		return nullptr;
 	}
 
 	void Texture::Bind() const
@@ -202,7 +261,7 @@ namespace GPUResource {
 		///////////////////////////////////////////////////////////////////////
 		//Texture Parameter
 		TextureParameter tex_parameter{
-			IMGFormat::RGB,			//imgFormat
+			IMGFormat::RGB,			//imgInternalFormat
 			TextureType::RENDER,	//textureType
 
 			TexWrapMode::CLAMP,		//wrapMode
@@ -212,7 +271,7 @@ namespace GPUResource {
 
 		mWidth = width;
 		mHeight = height;
-		mRenderTexture.Generate(width, height, tex_parameter);
+		mRenderTexture.Generate(width, height, nullptr, tex_parameter);
 
 		//attach this new texture(fboTex) to the framebuffer FBO
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mRenderTexture.GetID(), 0);
@@ -252,7 +311,7 @@ namespace GPUResource {
 		mHeight = height;
 		//Texture Parameter
 		TextureParameter tex_parameter{
-						IMGFormat::RGB,			//imgFormat
+						IMGFormat::RGB,			//imgInternalFormat
 						TextureType::RENDER,	//textureType
 
 						TexWrapMode::CLAMP,		//wrapMode
@@ -263,7 +322,7 @@ namespace GPUResource {
 
 		//texture checks if the same texture gpu id was created before,
 		//if so a new is not generate but old one parameters gets modified
-		mRenderTexture.Generate(mWidth, mHeight, tex_parameter);
+		mRenderTexture.Generate(mWidth, mHeight, nullptr, tex_parameter);
 
 		//resize render buffer
 		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
@@ -341,14 +400,14 @@ namespace GPUResource {
 		//generate img to render to (colour attachment/render texture) 
 		//Texture Parameter
 		TextureParameter tex_parameter{
-			IMGFormat::DEPTH,			//imgFormat
+			IMGFormat::DEPTH,			//imgInternalFormat
 			TextureType::SHADOW_MAP,	//textureType
 
 			TexWrapMode::CLAMP,		//wrapMode
 			TexFilterMode::NEAREST,	//filterMode
 			DataType::FLOAT,			//pxDataType
 		};
-		mTexture.Generate(size, size, tex_parameter);
+		mTexture.Generate(size, size, nullptr, tex_parameter);
 		mSize = size;
 		//just incase texture is un binded
 		mTexture.Bind();

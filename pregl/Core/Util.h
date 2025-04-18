@@ -5,6 +5,8 @@
 
 #include "Core/Log.h"
 
+#include <random>
+
 namespace Util
 {
 	constexpr double PI = 3.141592653589793238462643;
@@ -114,17 +116,45 @@ namespace Util
 
 	namespace Random
 	{
+#define USE_UNIFORM_DISTRIBUTION 1
+
+#if USE_UNIFORM_DISTRIBUTION
+		static inline std::random_device rd;
+		static inline std::mt19937 sRndEngine(rd());
+#endif // USE_UNIFORM_DISTRIBUTION
+
+
 		//quick random value between two value, min & max
 		static inline float Float(float min, float max)
 		{
+#if USE_UNIFORM_DISTRIBUTION
+			std::uniform_real_distribution<float> dist(min, max);
+			return dist(sRndEngine);
+#else
 			return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+#endif // USE_UNIFORM_DISTRIBUTION
+		}
+
+		static inline std::uniform_real_distribution<float> sDistributionRange(0.0f, 1.0f);
+		static inline void SetFloatDistRange(float min, float max)
+		{
+			sDistributionRange = std::uniform_real_distribution<float>(min, max);
+		}
+
+		static inline float GetFloatRndDist()
+		{
+#if USE_UNIFORM_DISTRIBUTION
+			return sDistributionRange(sRndEngine);
+#else
+			return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
+#endif // USE_UNIFORM_DISTRIBUTION
 		}
 
 
 		//quick random value between two value, min & max
 		static inline int Int(int min, int max)
 		{
-			return min + rand() / (RAND_MAX / (max - min));
+			return min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (max - min)));
 		}
 
 

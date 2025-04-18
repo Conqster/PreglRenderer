@@ -18,7 +18,6 @@
 #define ANSI_YELLOW_COLOUR "\033[1;33m"	   //3
 #define ANSI_BLUE_COLOUR "\033[1;34m"      //1
 #define ANSI_RESET_COLOUR "\033[0m"
-
 #endif // ENABLE_CONSOLE_LOGGING
 
 
@@ -35,7 +34,8 @@ namespace Debug {
 	};
 
 
-	static std::string SeverityToString(const SEVERITY& value)
+	//static std::string SeverityToString(const SEVERITY& value)
+	constexpr const char* SeverityToString(const SEVERITY& value)
 	{
 		switch (value)
 		{
@@ -85,19 +85,26 @@ namespace Debug {
 		inline void ConsoleLog(std::string& msg, const SEVERITY& severity = SEVERITY::UNKNOWN)
 		{
 #if DEBUG_SEVERITY_LVL
-			msg = std::string(GetSeverityLvlANSIColour((int)severity)) + "[" + SeverityToString(severity) + "]: " + ANSI_RESET_COLOUR + msg;
-#endif // DEBUG_SEVERITY_LVL
+			std::cout << GetSeverityLvlANSIColour((int)severity) << "[" << SeverityToString(severity) << "]: " << ANSI_RESET_COLOUR << msg << "\n";
+#else
 			std::cout << msg << "\n";
+#endif // DEBUG_SEVERITY_LVL
+			printf("[USE OLD CONSOLE LOG SYSTEM] size: %d, & .size(): %d.\n", int(sizeof(msg)), int(msg.size()));
 		}
 
-		inline std::string ToLogString() { return ""; }
+
 		template <typename A, typename... N>
-		inline std::string ToLogString(A&& a, N&&... n)
+		inline void ConsoleLog(const SEVERITY& severity, A&& a, N&&... n)
 		{
-			std::ostringstream oss;
-			oss << std::forward<A>(a);
-			((oss << std::forward<N>(n)), ...);
-			return oss.str();
+			auto& out = std::cout;
+#if DEBUG_SEVERITY_LVL
+			out << GetSeverityLvlANSIColour((int)severity)
+				<< "[" << SeverityToString(severity) << "]: "
+				<< ANSI_RESET_COLOUR;
+#endif // DEBUG_SEVERITY_LVL
+			out << std::forward<A>(a);
+			((out << std::forward<N>(n)), ...);
+			out << "\n";
 		}
 	}
 
@@ -106,11 +113,13 @@ namespace Debug {
 #if ENABLE_CONSOLE_LOGGING
 
 	//implementations
-#define DEBUG_LOG_IMPL(type, ...) Debug::detail::ConsoleLog(Debug::detail::ToLogString(__VA_ARGS__), type)
+//#define DEBUG_LOG_IMPL(type, ...) Debug::detail::ConsoleLog(Debug::detail::ToLogString(__VA_ARGS__), type)
+#define DEBUG_LOG_IMPL(type, ...) Debug::detail::ConsoleLog(type, __VA_ARGS__)
 	constexpr bool ShouldLogSeverity(const Debug::SEVERITY& s);  //<--- forward function declare, see below for decleration
 #define INTERNAL_CONSOLE_DEBUG_LOG_CHECK_IMPL(type, ...) \
 		if constexpr (ShouldLogSeverity(type)) \
-			Debug::detail::ConsoleLog(Debug::detail::ToLogString(__VA_ARGS__), type)
+			Debug::detail::ConsoleLog(type, __VA_ARGS__)
+			//Debug::detail::ConsoleLog(Debug::detail::ToLogString(__VA_ARGS__), type)
 
 #if ONLY_HIGH_LOG
 #define DEBUG_LOG(...)
@@ -201,14 +210,14 @@ constexpr const char* GetAssertName(const ASSERT_TYPE& type)
 template<typename... Args>
 [[maybe_unused]] inline static void AssertOutput(const char* expr, const ASSERT_TYPE& type, const char* file, unsigned line, Args&&... msg_args)
 {
-	std::cout << Debug::GetSeverityLvlANSIColour((int)type) << "[" << GetAssertName(type) << "]: " << ANSI_RESET_COLOUR;
+	auto& out = std::cout;
+	out << Debug::GetSeverityLvlANSIColour((int)type) << "[" << GetAssertName(type) << "]: " << ANSI_RESET_COLOUR;
 
-	std::cout << "Assertion failed (" << expr << ").";
+	out << "Assertion failed (" << expr << ").";
+	
+	((out << std::forward<Args>(msg_args)), ...);
 
-	std::cout << Debug::detail::ToLogString(std::forward<Args>(msg_args)...);
-
-
-	std::cout << ". FILE: " << file
+	out << ". FILE: " << file
 		<< ", LINE: " << line << std::endl;
 
 }

@@ -10,7 +10,7 @@ public:
 	bool Init(const char* name, unsigned int width, unsigned int height, bool full_screen = false);
 
 	GLFWwindow* GetWindow() const { return mWindow; }
-	std::string GetName() const { return mName; }
+	std::string& GetName() { return mName; }
 	unsigned int GetWidth() { return  mWindowWidth; }
 	unsigned int GetHeight() { return mWindowHeight; }
 	float GetAspectRatio() {return (float)mWindowWidth / (float)mWindowHeight;}

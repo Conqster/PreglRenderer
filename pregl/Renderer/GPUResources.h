@@ -13,12 +13,16 @@ namespace GPUResource {
 	{
 		REPEAT,
 		CLAMP, //default clamp to border
+
+		COUNT
 	};
 
 	enum class TexFilterMode : uint8_t
 	{
 		NEAREST,   //GL_NEAREST for both MIN and MAG
 		LINEAR,   //GL_LINEAR for both MIN and MAG
+
+		COUNT
 	};
 
 	enum class IMGFormat : uint8_t
@@ -53,18 +57,22 @@ namespace GPUResource {
 		NORMAL_MAP,
 		SHADOW_MAP,
 		RENDER,
+		UTILITIES,
 
 		COUNT,
 	};
 
 	struct TextureParameter
 	{
-		IMGFormat imgFormat = IMGFormat::RGBA;
+		IMGFormat imgInternalFormat = IMGFormat::RGBA;
 		TextureType textureType = TextureType::DEFAULT;
 			
 		TexWrapMode wrapMode = TexWrapMode::REPEAT;
 		TexFilterMode filterMode = TexFilterMode::LINEAR;
 		DataType pxDataType = DataType::UNSIGNED_BYTE; //pixel data data type
+		
+		bool useEqualFormat = true;
+		IMGFormat format = IMGFormat::RGBA;
 	};
 
 
@@ -90,6 +98,9 @@ namespace GPUResource {
 			case GPUResource::TextureType::RENDER:
 				return "RENDER";
 				break;
+			case GPUResource::TextureType::UTILITIES:
+				return "UTILITIES";
+				break;
 			default:
 				return "UNKNOWN";
 				break;
@@ -103,9 +114,44 @@ namespace GPUResource {
 			return false;
 		}
 
+		static int IMGFormatChannelCount(IMGFormat format)
+		{
+			switch (format)
+			{
+			case GPUResource::IMGFormat::RGB:
+				return 3;
+				break;
+			case GPUResource::IMGFormat::RGBA:
+				return 4;
+				break;
+			case GPUResource::IMGFormat::DEPTH:
+				return 1;
+				break;
+			case GPUResource::IMGFormat::RGBA16:
+				return 4;
+				break;
+			case GPUResource::IMGFormat::RGB16F:
+				return 3;
+				break;
+			case GPUResource::IMGFormat::RGBA16F:
+				return 4;
+				break;
+			case GPUResource::IMGFormat::RGB32F:
+				return 3;
+				break;
+			case GPUResource::IMGFormat::RGBA32F:
+				return 4;
+				break;
+			default:
+				return 4;
+				break;
+			}
+			return 4;
+		}
+
 		static std::array<const char*, static_cast<size_t>(TextureType::COUNT)> TextureTypesToStringArray()
 		{
-			return{ "DEFAULT", "BASE_MAP", "NORMAL_MAP", "SHADOW_MAP", "RENDER" };
+			return{ "DEFAULT", "BASE_MAP", "NORMAL_MAP", "SHADOW_MAP", "RENDER", "UTILITIES" };
 		}
 
 		static std::array<const char*, static_cast<size_t>(IMGFormat::COUNT)> ImgFormatToStringArray()
@@ -113,6 +159,16 @@ namespace GPUResource {
 			return { "RGB", "RGBA", "DEPTH", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F" };
 		}
 
+		//static std::array<std::string, static_cast<size_t>(TexWrapMode::COUNT)> TextureWrapModeToStringArray()
+		static std::array<const char*, static_cast<size_t>(TexWrapMode::COUNT)> TextureWrapModeToStringArray()
+		{
+			return { "REPEAT", "CLAMP" };
+		}
+
+		static std::array<const char*, static_cast<size_t>(TexFilterMode::COUNT)> TextureFilterModeToStringArray()
+		{
+			return { "NEAREST", "LINEAR" };
+		}
 	} //Utilities namespace
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -126,26 +182,33 @@ namespace GPUResource {
 		int mHeight = 0;
 
 		//image / colour format
-		IMGFormat mFormat = IMGFormat::RGB;
+		IMGFormat mInternalFormat = IMGFormat::RGB;
 		TextureType mType = TextureType::DEFAULT;
 
 		//hack to know if already loaded
 		bool mLoaded = false;
 		std::string mFilePath;
+		TextureParameter mParameter;
 	public:
 		Texture() = default;
 		Texture(unsigned int width, unsigned int height, TextureParameter parameter = {});
-		void Generate(unsigned int weight, unsigned int height, TextureParameter parameter = {});
+		Texture(unsigned int width, unsigned int height, const void* pixels_data, TextureParameter parameter = {});
+		void Generate(unsigned int weight, unsigned int height, const void* pixels_data, TextureParameter parameter = {});
 		Texture(const char* file_path, bool flip_uv) { GenerateFromFile(file_path, flip_uv); };
 		bool GenerateFromFile(const char* file_path, bool flip_uv, TextureParameter parameter = {});
 
+
 		unsigned int GetID() { return mID; }
 		TextureType& GetType() { return mType; }
-		IMGFormat& GetFormat() { return mFormat; }
+		IMGFormat& GetFormat() { return mInternalFormat; }
 		std::string& GetImgPath() { return mFilePath; }
+		//send a copy you do not want modification of texture data to prevent error
+		TextureParameter GetParameter() { return mParameter; }
 
 		int GetWidth() { return mWidth; }
 		int GetHeight() { return mHeight; }
+		unsigned char* RetrieveGPUImageBuffer();
+		//void RetrieveGPUImageBuffer(void*& ptr_img_buffer);
 
 		void Bind() const;
 

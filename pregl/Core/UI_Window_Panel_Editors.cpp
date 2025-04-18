@@ -104,6 +104,23 @@ void UI::ShutDown()
 	gResources->ShutDown();
 }
 
+
+
+
+static std::vector<UI::UIFlag> gsUIOpenTrackers;
+
+void UI::RegisterandGetUIFlag(const char* name, bool* p_open)
+{
+	gsUIOpenTrackers.push_back({ p_open, name });
+	DEBUG_LOG_ERROR("Registered new UI Flag, name_buf: ", name);
+}
+
+std::vector<UI::UIFlag>& UI::GetRegisteredUIFlags()
+{
+	return gsUIOpenTrackers;
+}
+
+
 ///////////////////////////////////////////////////////
 //Utilities
 ///////////////////////////////////////////////////////
@@ -282,15 +299,23 @@ void UI::Windows::MaterialsEditor(MaterialList materials)
 			ImGui::TreePop();
 		}
 
-		ImGui::End();
 	}
+	ImGui::End();
 }
 
 
+#include "Core/HeapMemAllocationTracking.h"
 
 void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture)
 {
-	if (ImGui::Begin("Texture Editor Window"))
+	//OPEN_BLOCK_MEM_TRACKING_PROFILE(texture);
+
+	char name_buf[64];
+	snprintf(name_buf, sizeof(name_buf), "Texture Editor Window GPU: %d {WIP}.", int(texture.GetID()));
+	HELPER_REGISTER_UIFLAG(name_buf, open_flag);
+	ImGui::PushID(&texture);
+	//if (ImGui::Begin(name_buf.c_str(), &open_flag))
+	if (ImGui::Begin(name_buf, &open_flag))
 	{
 		ImVec2 ui_win_size = ImGui::GetWindowSize();
 		ImVec2 preview_texture_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
@@ -300,38 +325,56 @@ void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture)
 		ImVec2 top_left = ImGui::GetCursorPos();
 		ImGui::Image((ImTextureID)(intptr_t)texture.GetID(), preview_texture_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
 
+		///*static*/ int curr_tex_type = (int)texture.GetType();
+		///*static*/ int curr_img_format = (int)texture.GetFormat();
 
-		static bool update_texture = false;
-		static int curr_tex_type = (int)texture.GetType();
-		static int curr_img_format = (int)texture.GetFormat();
+		snprintf(name_buf, sizeof(name_buf), "Texture GPU ID: %d.", texture.GetID());
+		ImGui::Text(name_buf);
+		snprintf(name_buf, sizeof(name_buf), "Texture  Size: %d x %d.", texture.GetWidth(), texture.GetHeight());
+		ImGui::Text(name_buf);
 
-		ImGui::Text((std::string("Texture GPU ID: ") + std::to_string(texture.GetID())).c_str());
-		std::string tex_size_text = std::string("Texture Size: ") + std::to_string(texture.GetWidth()) + std::string(" x ") + std::to_string(texture.GetHeight());
-		ImGui::Text(tex_size_text.c_str());
+		bool update_texture = false;
+		//cache a copy of texture parameter 
+		GPUResource::TextureParameter tex_parameter = texture.GetParameter();
+		int curr_tex_type = (int)tex_parameter.textureType;
 		auto tex_types = GPUResource::Utilities::TextureTypesToStringArray();
 		update_texture |= ImGui::Combo("Texture Type", &curr_tex_type, tex_types.data(), tex_types.size());
+		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "{WIP}: Some of the options below crashes!!!");
+		int curr_img_format = (int)tex_parameter.imgInternalFormat;
 		auto tex_img_format = GPUResource::Utilities::ImgFormatToStringArray();
-		update_texture |= ImGui::Combo("Texture Image Format", &curr_img_format, tex_img_format.data(), tex_img_format.size());
+		update_texture |= ImGui::Combo("Texture Image Internal Format", &curr_img_format, tex_img_format.data(), tex_img_format.size());
+		update_texture |= ImGui::Checkbox("Use similar Internal - Tex Format", &tex_parameter.useEqualFormat);
+		int curr_tex_format = (int)tex_parameter.format;
+		if (!tex_parameter.useEqualFormat)
+			update_texture |= ImGui::Combo("Texture Format", &curr_tex_format, tex_img_format.data(), tex_img_format.size());
+
+		snprintf(name_buf, sizeof(name_buf), "Texture Wrap Mode: %s.", GPUResource::Utilities::TextureWrapModeToStringArray()[(int)tex_parameter.wrapMode]);
+		ImGui::Text(name_buf);
+		snprintf(name_buf, sizeof(name_buf), "Texture Filter Mode: %s.", GPUResource::Utilities::TextureFilterModeToStringArray()[(int)tex_parameter.filterMode]);
+		ImGui::Text(name_buf);
 
 		if (update_texture)
 		{
 			DEBUG_LOG_WARNING("[SingleTextureEditor]: Need to update texture");
 
-			GPUResource::TextureParameter tex_parameter = {};
-			tex_parameter.imgFormat = (GPUResource::IMGFormat)curr_img_format;
 			tex_parameter.textureType = (GPUResource::TextureType)curr_tex_type;
-			if (GPUResource::Utilities::IsFormatFloatPoint(tex_parameter.imgFormat))
+			tex_parameter.imgInternalFormat = (GPUResource::IMGFormat)curr_img_format;
+			tex_parameter.format = (tex_parameter.useEqualFormat) ? tex_parameter.imgInternalFormat : (GPUResource::IMGFormat)curr_tex_format;
+
+			if (GPUResource::Utilities::IsFormatFloatPoint(tex_parameter.imgInternalFormat))
 				tex_parameter.pxDataType = GPUResource::DataType::FLOAT;
-			if (!texture.GetImgPath().empty())
-				texture.GenerateFromFile(texture.GetImgPath().c_str(), true, tex_parameter);
-			else
-				texture.Generate(texture.GetWidth(), texture.GetHeight(), tex_parameter);
+			//if (!texture.GetImgPath().empty())
+			//	texture.GenerateFromFile(texture.GetImgPath().c_str(), true, tex_parameter);
+			//else
+				texture.Generate(texture.GetWidth(), texture.GetHeight(), nullptr, tex_parameter);
 
 			update_texture = false;
 		}
 
-		ImGui::End();
 	}
+	ImGui::End();
+	ImGui::PopID();
+	///CLOSE_BLOCK_MEM_TRACKING_PROFILE(texture);
 }
 
 

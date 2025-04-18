@@ -56,6 +56,8 @@ bool DebugGizmosRenderer::Initialise()
 
 
 
+	mLineBatches.reserve(20);
+
     return success;
 }
 
@@ -71,6 +73,7 @@ void DebugGizmosRenderer::DrawLine(const glm::vec3& v0, const glm::vec3& v1, con
 	//	float start[3]; float startColour[4];  // <--- vertex0
 	//	float end[3]; float endColour[4];	   // <--- vertex1
 	//};
+	DEBUG_LOG("Line: ",  sizeof(Line));
 	Line line = {
 		v0.x, v0.y, v0.z, colour.x, colour.y, colour.z, colour.z,
 		v1.x, v1.y, v1.z, colour.x, colour.y, colour.z, colour.z,

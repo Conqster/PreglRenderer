@@ -85,4 +85,6 @@ private:
 
 	//Utility 
 	std::shared_ptr<GPUResource::Texture> mErrorTex = nullptr;
+	std::shared_ptr<GPUResource::Texture> mNoiseTex = nullptr;
+	std::shared_ptr<GPUResource::Texture> mNoiseTex2 = nullptr;
 };

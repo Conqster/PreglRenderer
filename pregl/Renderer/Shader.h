@@ -5,7 +5,7 @@
 #include <GL/glew.h>
 #include <GLM/glm/glm.hpp>
 
-
+#include <stdint.h>
 struct ShaderBlockingIdx
 {
 	std::string name;
@@ -29,14 +29,17 @@ public:
 	void SetUniformVec4(const char* name, const glm::vec4& value);
 	void SetUniformBlockIdx(const char* name, int blockBindingIdx = 0);
 
-	std::vector<ShaderBlockingIdx> GetBindingBlocks() const { return cacheBindingBlocks; }
+	std::vector<ShaderBlockingIdx> GetBindingBlocks() const { return mCacheBindingBlocks; }
 
 	void Clear();
 private:
 	unsigned int mID = 0;
 	std::string mName = "unk";
-	std::unordered_map<std::string, int> cacheUniformLocations = std::unordered_map<std::string, int>();
-	std::vector<ShaderBlockingIdx> cacheBindingBlocks = std::vector<ShaderBlockingIdx>();
+	//std::unordered_map<std::string, int> mCacheUniformLocations = std::unordered_map<std::string, int>();
+
+
+	std::unordered_map<std::string, int> mCacheUniformLocations = std::unordered_map<std::string, int>();
+	std::vector<ShaderBlockingIdx> mCacheBindingBlocks = std::vector<ShaderBlockingIdx>();
 
 	std::string ReadFile(const std::string& shader_file);
 

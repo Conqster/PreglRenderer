@@ -25,7 +25,10 @@
 
 #include "Log.h"
 
+#include "HeapMemAllocationTracking.h"
+
 using namespace InputSystem;
+
 
 Application::Application(const ApplicationSpecification& app_spec)
 {
@@ -92,14 +95,21 @@ Application::~Application()
 	mPtrInputEventHandle = nullptr;
 }
 
+
+
 void Application::Run()
 {
 	if (bFailLaunch)
 		return;
 
+	//stack based text to prevent write to heap string
+	char win_title_char_buf[128];
+	int write_offset = 0;
+
 	//main loop {delta time >> camera 
 	while (mDisplayManager.ProgramWindowActive())
 	{
+		SCOPE_MEM_ALLOC_PROFILE("MainLoop");
 		static float loop_time = 0.0f;
 		//SCOPE_TIME("Apploop");
 		SCOPE_TIME("Main Loop", &loop_time);
@@ -108,24 +118,38 @@ void Application::Run()
 		mFrameDeltaTime = curr_frame_time - mLastFrameTime;
 		mLastFrameTime = curr_frame_time;
 
-		//Gfx Program Interface
-		if(mGfxProgram)
+		////Gfx Program Interface
+		if (mGfxProgram)
 			mGfxProgram->OnUpdate(mFrameDeltaTime);
 
 
+		auto& mem_alloc_tracker = Util::Memory::GetMemAllocTracker();
+
 		//Program name | VSync: true | 23.4 ms | 23 FPS
-		std::string vsync = mDisplayManager.GetVSync() ? "true | " : "false | ";
-		std::string title_update = mDisplayManager.GetName();
-		title_update += " | VSync: " +
-			vsync +
-			std::to_string(mFrameDeltaTime) + "ms | " +
-			std::to_string(1 / mFrameDeltaTime) + "FPS ";
+		//writing in the char buffer 
+		// reset write offset per frame
+		write_offset = 0;
+		//update write offset to determine stack memory location  
+		//write based on offset (win_title_update + write_offset)
+		// writable size/writable left based on used (sizeof(win_title_update) - write_offset)
+		// writing fmt/ info 
+		// ...... 
+		write_offset += snprintf(win_title_char_buf + write_offset, sizeof(win_title_char_buf) - write_offset, "%s | VSync: %s | ",
+						mDisplayManager.GetName().c_str(), mDisplayManager.GetVSync() ? "true" : "false");
+		
+		write_offset += snprintf(win_title_char_buf + write_offset, sizeof(win_title_char_buf) - write_offset, "%.2fms | %.2fFPS",
+						mFrameDeltaTime, (1.0f / mFrameDeltaTime));
+
+		
+
+		//28
+		DEBUG_LOG("Titile Prinf Update size ", sizeof(win_title_char_buf), ".size(): ", write_offset);
 
 
 		if (Input::GetKeyUp(IKeyCode::V))
 			mDisplayManager.SetVSync(!mDisplayManager.GetVSync());
 
-		mDisplayManager.ChangeWindowTitle(title_update.c_str());
+		mDisplayManager.ChangeWindowTitle(win_title_char_buf);
 
 		UpdateMainCamera(mFrameDeltaTime);
 
@@ -139,8 +163,10 @@ void Application::Run()
 
 		//ui logic
 		ApplicationUI();
+		//OPEN_BLOCK_MEM_TRACKING_PROFILE(block_program);
 		if (mGfxProgram)
 			mGfxProgram->OnUI();
+		//CLOSE_BLOCK_MEM_TRACKING_PROFILE(block_program);
 
 		//present all ui stuffs
 		ImGui::Render();
@@ -152,6 +178,14 @@ void Application::Run()
 		if (mPtrInputEventHandle)
 			mPtrInputEventHandle->FlushFrameInputs();
 		mDisplayManager.FlushAndSwapBuffer();
+		//printf("===============================================END OF FRAME=====================================================\n");
+		//DEBUG_LOG("Current Heap Memory Allocation Count: ", mem_alloc_tracker.CurrentAllocation(), ".");
+		//std::cout << "Current Heap Memory Allocation Size: " << mem_alloc_tracker.CurrentUsage() << " bytes.\n";
+		//std::cout << "Program Overall Allocation Count: " << mem_alloc_tracker.allocatedCount << ".\n";
+		//std::cout << "Program Overall Allocation Size: " << mem_alloc_tracker.allocatedSize << " bytes.\n";
+		//std::cout << "Program Overall Freed Count: " << mem_alloc_tracker.freeCount << ".\n";
+		//std::cout << "Program Overall Freed Size: " << mem_alloc_tracker.freeSize << " bytes.\n";
+		//printf("===============================================END OF INFO=====================================================\n");
 	}
 
 }
@@ -186,7 +220,7 @@ void Application::UpdateMainCamera(float dt)
 
 void Application::ApplicationUI()
 {
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 	if (ImGui::Begin("Sample Gfx Program"))
 	{
 		ImGui::SeparatorText("PreglRenderer App");
@@ -219,8 +253,17 @@ void Application::ApplicationUI()
 
 			ImGui::TreePop();
 		}
-		
 
-		ImGui::End();
+		if (ImGui::TreeNode("Available Extranal UI"))
+		{
+			for (auto& ui : UI::GetRegisteredUIFlags())
+			{
+				ImGui::PushID(&ui);
+				ImGui::Checkbox(ui.name.c_str(), ui.open);
+				ImGui::PopID();
+			}
+			ImGui::TreePop();
+		}
 	}
+	ImGui::End();
 }

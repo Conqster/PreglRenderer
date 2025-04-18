@@ -20,6 +20,10 @@
 
 #include "Core/UI_Window_Panel_Editors.h"
 
+#include <random>
+
+#include "Core/HeapMemAllocationTracking.h"
+
 void SampleLightingProgram::OnInitialise(AppWindow* display_window)
 {
 	display_window->ChangeWindowTitle("Lighting Program Model");
@@ -39,7 +43,7 @@ void SampleLightingProgram::OnInitialise(AppWindow* display_window)
 
 void SampleLightingProgram::OnUpdate(float delta_time)
 {
-	BeginFrame();
+	BeginFrame(); 
 
 	ShadowPass();
 
@@ -50,9 +54,11 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
 	//plane 
 	if (mQuadMaterial)
 	{
+
 		MaterialShaderHelper(mShader, *mQuadMaterial);
 		//Draw planes
 		for (const auto& model : m_PlaneTransform)
@@ -105,7 +111,6 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 
 
 	glDisable(GL_BLEND);
-
 
 	//Draw a sample line connecting spheres
 	for (int i = 1; i < m_SphereTransform.size(); i++)
@@ -175,6 +180,27 @@ void SampleLightingProgram::OnUI()
 	UI::Windows::MaterialsEditor(mMaterialList);
 
 	UI::Windows::SingleTextureEditor(*mQuadMaterial->diffuseMap);
+
+	/*static bool test = */ HELPER_REGISTER_UIFLAG("Lets Go", p_open_flag);
+
+	if (p_open_flag)
+	{
+		if (ImGui::Begin("Lets Go", &p_open_flag))
+		{
+			ImGui::Text("bsjbhsa os oshigp jwpiasdfhipasiphgrisfpj ipgji pj");
+			ImGui::Text("bsjbhsa os oshigp jwpiasdfhipasiphgrisfpj ipgji pj");
+			ImGui::Text("bsjbhsa os oshigp jwpiasdfhipasiphgrisfpj ipgji pj");
+			ImGui::Text("bsjbhsa os oshigp jwpiasdfhipasiphgrisfpj ipgji pj");
+		}
+		ImGui::End();
+
+	}
+
+	if (mNoiseTex)
+		UI::Windows::SingleTextureEditor(*mNoiseTex);
+
+	if (mNoiseTex2)
+		UI::Windows::SingleTextureEditor(*mNoiseTex2);
 
 }
 
@@ -282,7 +308,6 @@ void SampleLightingProgram::CreateObjects()
 	}
 
 
-
 	mShadowShader.Create("shadow_depth", "assets/shaders/shadowMapping/ShadowDepth.vert", "assets/shaders/shadowMapping/ShadowDepth.frag");
 	mShadowMapFBO.Generate(4096);
 
@@ -293,10 +318,64 @@ void SampleLightingProgram::CreateObjects()
 	mMaterialPreviewCam.SetPosition(glm::vec3(0.0f, 0.0f, -1.9f));
 	//mPreviewTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.9f));
 	mPreviewShader.Create("preview_shader", "assets/shaders/lighting/PreviewMaterial.vert", "assets/shaders/lighting/PreviewMaterial.frag");
+
+
+	std::uniform_real_distribution<float> random_floats(0.0f, 1.0f);
+	std::default_random_engine generator;
+	//Noise generation per pixel data 
+	std::vector<glm::vec3> noise_vector;
+	for (uint16_t i = 0; i < 16; i++)
+	{
+		float x = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
+		float y = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
+		float z = Util::Random::Float(0.0f, 1.0f);
+
+		x = random_floats(generator) * 2.0f - 1.0f;
+		y = random_floats(generator) * 2.0f - 1.0f;
+
+		glm::vec3 noise(x, y, 0.0f);
+		noise_vector.push_back(noise);
+	}
+
+	GPUResource::TextureParameter tex{
+		GPUResource::IMGFormat::RGBA,
+		//GPUResource::IMGFormat::RGBA16F,
+		GPUResource::TextureType::UTILITIES,
+		GPUResource::TexWrapMode::REPEAT,
+		GPUResource::TexFilterMode::NEAREST,
+		GPUResource::DataType::FLOAT,
+		false, GPUResource::IMGFormat::RGB,
+	};
+	DEBUG_LOG("GPU resources texture paramerter struct size: ", sizeof(GPUResource::TextureParameter));
+	DEBUG_LOG("GPU resources image format enum size: ", sizeof(GPUResource::IMGFormat));
+	DEBUG_LOG("GPU resources texture type enum size: ", sizeof(GPUResource::TextureType));
+	DEBUG_LOG("GPU resources texture wrap mode enum size: ", sizeof(GPUResource::TexWrapMode));
+	DEBUG_LOG("GPU resources data type enum size: ", sizeof(GPUResource::DataType));
+
+	mNoiseTex = std::make_shared<GPUResource::Texture>(4, 4, &noise_vector[0], tex);
+
+	//Util::Random::SetFloatDistRange(0.0f, 1.0f);
+	//Util::Random::SetFloatDistRange(-1.0f, 1.0f);
+	//overriden whole
+	for (uint16_t i = 0; i < 16; i++)
+	{
+		//float x = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
+		//float y = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
+		//float z = Util::Random::Float(0.0f, 1.0f);
+
+		float x = Util::Random::GetFloatRndDist() * 2.0f - 1.0f;
+		float y = Util::Random::GetFloatRndDist() * 2.0f - 1.0f;
+
+		glm::vec3 noise(x, y, 0.0f);
+		noise_vector[i] = noise;
+	}
+
+	mNoiseTex2= std::make_shared<GPUResource::Texture>(4, 4, &noise_vector[0], tex);
 }
 
 void SampleLightingProgram::UpdateCameraUBO(EditorCamera& cam, float aspect_ratio)
 {
+	//SCOPE_MEM_ALLOC_PROFILE("UpdateCameraUBO");
 	//------------------Camera Matrix Data UBO-----------------------------/
 	unsigned int offset_ptr = 0;
 	mCameraUBO.SetSubDataByID(&(cam.GetPosition()[0]), sizeof(glm::vec3), offset_ptr);
@@ -306,17 +385,19 @@ void SampleLightingProgram::UpdateCameraUBO(EditorCamera& cam, float aspect_rati
 	mCameraUBO.SetSubDataByID(&(cam.ProjMat(aspect_ratio)[0][0]), sizeof(glm::mat4), offset_ptr);
 	offset_ptr += sizeof(glm::mat4);
 	mCameraUBO.SetSubDataByID(&(cam.ViewMat()[0][0]), sizeof(glm::mat4), offset_ptr);
-
-
+	DEBUG_LOG("Int size: ", sizeof(int), " bytes.");
+	DEBUG_LOG("uInt8 size: ", sizeof(uint8_t), " bytes.");
+	DEBUG_LOG("uInt16 size: ", sizeof(uint16_t), " bytes.");
 	float offset = 5.0f;
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 1.0f, 0.0f) + (mDirLight.direction * offset), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //world up 0, 1, 0
 	glm::mat4 proj = glm::ortho(-30.f, 30.f, -30.f, 30.f, 0.1f, 100.0f);
 	mLightProjViewMat = proj * view;
 
+
+
 	mShader.Bind();
 	mShader.SetUniformMat4("uLightSpaceMat", mLightProjViewMat);
 	//------------------Lighting Data UBO-----------------------------/
-
 }
 
 void SampleLightingProgram::UpdateShaders()
@@ -357,7 +438,6 @@ void SampleLightingProgram::ShadowPass()
 {
 	if (!mDisplayManager)
 		return;
-
 	mShadowMapFBO.Write();
 	glCullFace(GL_FRONT);
 	mShadowShader.Bind();

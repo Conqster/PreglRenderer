@@ -55,6 +55,9 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 	if (has_geometry_shader)
 		glDeleteShader(geo_shader);
 
+	//caches 
+	mCacheUniformLocations.reserve(10);
+
 	DEBUG_LOG_STATUS("Complete Shader ", mName, ", GPU ID : ", mID, " Creation");
 	return true;
 }
@@ -99,7 +102,7 @@ void Shader::SetUniformBlockIdx(const char* name, int blockBindingIdx)
 		name,
 		blockBindingIdx
 	};
-	cacheBindingBlocks.push_back(shader_block);
+	mCacheBindingBlocks.push_back(shader_block);
 	DEBUG_LOG_STATUS("[SHADER - program '", mName, "' - ID ", mID, "]: Set new uniform block block name: ", shader_block.name, ", idx: ", shader_block.idx, ".");
 }
 
@@ -112,7 +115,8 @@ void Shader::Clear()
 		glDeleteProgram(mID);
 		mID = 0;
 	}
-	cacheUniformLocations.clear();
+
+	mCacheUniformLocations.clear();
 }
 
 std::string Shader::ReadFile(const std::string& shader_file)
@@ -164,17 +168,17 @@ unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source
 
 int Shader::GetUniformLocation(const char* name)
 {
-	if (cacheUniformLocations.find(name) != cacheUniformLocations.end())
-		return cacheUniformLocations[name];
+	//fix for multithreading 
+	static std::string str_name;
+	str_name.reserve(32);
+	str_name.assign(name);
 
-
+	if (mCacheUniformLocations.find(str_name) != mCacheUniformLocations.end()) 
+		return mCacheUniformLocations[str_name];
 	int location = glGetUniformLocation(mID, name);
-
 	if (location == -1)
 		DEBUG_LOG_WARNING("[SHADER UNIFORM (WARNING) program: ", mName, " GPU ID: ", mID, "]: uniform ", name, " doesn't exist!!!!!");
 	else
-		cacheUniformLocations[name] = location;
-
-
+		mCacheUniformLocations[str_name] = location;
 	return location;
 }

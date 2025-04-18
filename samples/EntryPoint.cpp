@@ -4,12 +4,13 @@
 #include "SampleGfxProgram.h"
 
 #include "SampleLightScene.h"
-
+#include "Core/HeapMemAllocationTracking.h"
 
 int main()
 {
+	//SCOPE_MEM_ALLOC_PROFILE("Program");
+	//OPEN_BLOCK_MEM_TRACKING_PROFILE(Program);
 	DEBUG_LOG("Launch PreglRenderer Application Program !!!!!!!!");
-
 
 	auto app = Application({ "PreglRenderer App", false, {1920, 1080} });
 	
@@ -20,15 +21,6 @@ int main()
 	//app.AddGfxProgram(gfx);
 	//
 
-	//glm::vec3 mVector(2.0f, 1.0f, 0.0f);
-	//DEBUG_LOG_WARNING("This is crazy; " , mVector);
-	//DEBUG_LOG_ERROR("fbnfj", "esgr");
-	//DEBUG_LOG_ERROR("fbnfj", "esgr", "dsvk");
-	//DEBUG_LOG_STATUS("This is my new log");
-	//DEBUG_LOG_INFO(mVector, ", ", mVector, " = ", mVector + mVector);
-	//Debug::Log<Debug::SEVERITY::ERROR>("Lets goooooo");
-	//Debug::Log("Lets goooooo");
-
 	//auto gfx = new SampleGfxProgram();
 	auto gfx = new SampleLightingProgram();
 	gfx->OnInitialise(&app.GetWindow());
@@ -37,6 +29,7 @@ int main()
 
 	app.Run();
 
+	//CLOSE_BLOCK_MEM_TRACKING_PROFILE(Program);
 	return 0;
 }
 
