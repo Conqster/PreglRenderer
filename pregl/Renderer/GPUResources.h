@@ -40,6 +40,8 @@ namespace GPUResource {
 		RGB32F,
 		RGBA32F,
 
+		RED,
+		RG,
 
 		COUNT,
 	};
@@ -142,6 +144,12 @@ namespace GPUResource {
 			case GPUResource::IMGFormat::RGBA32F:
 				return 4;
 				break;
+			case GPUResource::IMGFormat::RED:
+				return 1;
+				break;
+			case GPUResource::IMGFormat::RG:
+				return 2;
+				break;
 			default:
 				return 4;
 				break;
@@ -156,7 +164,7 @@ namespace GPUResource {
 
 		static std::array<const char*, static_cast<size_t>(IMGFormat::COUNT)> ImgFormatToStringArray()
 		{
-			return { "RGB", "RGBA", "DEPTH", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F" };
+			return { "RGB", "RGBA", "DEPTH", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F", "RED", "RG"};
 		}
 
 		//static std::array<std::string, static_cast<size_t>(TexWrapMode::COUNT)> TextureWrapModeToStringArray()

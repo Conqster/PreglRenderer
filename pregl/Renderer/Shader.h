@@ -14,11 +14,21 @@ struct ShaderBlockingIdx
 	//a compare operator to check two block
 };
 
+struct ShaderMetaData
+{
+	char name[32];
+	char pathBuffer[256];
+	int vertexOffset = 0;
+	int fragmentOffset = 0;
+	int geometryOffset = 0;
+};
+
 class Shader
 {
 public:
 	Shader() = default;
 	bool Create(const std::string& name,  const std::string& ver, const std::string& frag, const std::string& geo = "");
+	bool SoftReloadCreate(const std::string& ver, const std::string& frag, const std::string& geo = "");
 
 	void Bind() const;
 
@@ -30,11 +40,16 @@ public:
 	void SetUniformBlockIdx(const char* name, int blockBindingIdx = 0);
 
 	std::vector<ShaderBlockingIdx> GetBindingBlocks() const { return mCacheBindingBlocks; }
+	const char* GetName() const { return mName.c_str(); }
+	unsigned int GetID() const { return mID; }
+	ShaderMetaData& GetMetaData() { return mMetaData; }
 
 	void Clear();
 private:
 	unsigned int mID = 0;
 	std::string mName = "unk";
+
+	ShaderMetaData mMetaData;
 	//std::unordered_map<std::string, int> mCacheUniformLocations = std::unordered_map<std::string, int>();
 
 
@@ -43,6 +58,8 @@ private:
 
 	std::string ReadFile(const std::string& shader_file);
 
-	unsigned int CompileShader(GLenum shader_type, const std::string& source);
+	unsigned int CompileShader(GLenum shader_type, const std::string& source, bool soft = false);
 	int GetUniformLocation(const char* name);
+
+	ShaderMetaData CacheMetaData(const std::string& name, const std::string& ver, const std::string& frag, const std::string& geo = "");
 };

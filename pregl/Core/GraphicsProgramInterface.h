@@ -12,6 +12,8 @@ public:
 	}
 	virtual void OnInitialise(AppWindow* display_window) = 0;
 	virtual void OnUpdate(float delta_time) = 0;
+	//concluting frame
+	virtual void OnLateUpdate(float delta_time) = 0;
 	virtual void OnDestroy() = 0;
 
 	virtual void OnUI() = 0;

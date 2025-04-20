@@ -7,12 +7,14 @@
 bool Shader::Create(const std::string& name, const std::string& ver, const std::string& frag, const std::string& geo)
 {
 	mName = name;
+	mMetaData = CacheMetaData(name, ver, frag, geo);
+
+
+
 	std::string vertex_code = ReadFile(ver);
 	std::string fragment_code = ReadFile(frag);
 	bool has_geometry_shader = !geo.empty();
 	std::string geometry_code = (has_geometry_shader) ? ReadFile(geo) : "";
-
-
 	
 	mID = glCreateProgram();
 	DEBUG_LOG_STATUS("Created Shader program, name: ", mName, ", GPU ID: ", mID);
@@ -59,6 +61,72 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 	mCacheUniformLocations.reserve(10);
 
 	DEBUG_LOG_STATUS("Complete Shader ", mName, ", GPU ID : ", mID, " Creation");
+	return true;
+}
+
+bool Shader::SoftReloadCreate(const std::string& ver, const std::string& frag, const std::string& geo)
+{
+	mMetaData = CacheMetaData(mName, ver, frag, geo);
+
+	std::string vertex_code = ReadFile(ver);
+	std::string fragment_code = ReadFile(frag);
+	bool has_geometry_shader = !geo.empty();
+	std::string geometry_code = (has_geometry_shader) ? ReadFile(geo) : "";
+
+	//check if already loaded
+	unsigned new_id = glCreateProgram();
+	DEBUG_LOG_STATUS("Try Reloading Shader program, name: ", mName, ", GPU ID: ", mID, ", To --> ID: ", new_id);
+
+	//Compilation process
+	GLuint vertex_shader = CompileShader(GL_VERTEX_SHADER, vertex_code, true);
+	GLuint frag_shader = CompileShader(GL_FRAGMENT_SHADER, fragment_code, true);
+	GLuint geo_shader = (has_geometry_shader) ? CompileShader(GL_GEOMETRY_SHADER, geometry_code, true) : 0;
+	DEBUG_LOG_STATUS("Successfully Recompile Shader Code.");
+
+	// attach complied shader code
+	glAttachShader(new_id, vertex_shader);
+	glAttachShader(new_id, frag_shader);
+	if (has_geometry_shader)
+		glAttachShader(new_id, geo_shader);
+
+	
+	glLinkProgram(new_id);
+	glValidateProgram(new_id);
+
+	GLint valid_shader_progarm = 0;
+	glGetProgramiv(new_id, GL_VALIDATE_STATUS, &valid_shader_progarm);
+
+	if (!valid_shader_progarm)
+	{
+		GLchar log_message[1024];
+		glGetShaderInfoLog(new_id, 1024, NULL, log_message);
+		DEBUG_LOG_WARNING("[ERROR VALIDATING SHADER PROGRAM (for", mName, "]: ", log_message);
+
+
+		//need to destroy shader if compiled 
+		glDeleteShader(vertex_shader);
+		glDeleteShader(frag_shader);
+		if (has_geometry_shader)
+			glDeleteShader(geo_shader);
+
+		glDeleteProgram(new_id);
+
+		return false;
+	}
+
+	//swap id & delete previous
+	glDeleteProgram(mID);
+	mID = new_id;
+	DEBUG_LOG_STATUS("Complete Shader ", mName, ", New GPU ID : ", mID, " Creation");
+
+	glDeleteShader(vertex_shader);
+	glDeleteShader(frag_shader);
+	if (has_geometry_shader)
+		glDeleteShader(geo_shader);
+
+	//caches 
+	mCacheUniformLocations.reserve(10);
+
 	return true;
 }
 
@@ -138,7 +206,7 @@ std::string Shader::ReadFile(const std::string& shader_file)
 	return content;
 }
 
-unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source)
+unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source, bool soft)
 {
 	GLuint shaderid = glCreateShader(shader_type);
 
@@ -147,20 +215,21 @@ unsigned int Shader::CompileShader(GLenum shader_type, const std::string& source
 	glCompileShader(shaderid);
 
 
-	GLint result = 0;
-	GLchar eLog[1024] = { 0 };
-	glGetShaderiv(shaderid, GL_COMPILE_STATUS, &result);
+	GLint shader_complied = 0;
+	glGetShaderiv(shaderid, GL_COMPILE_STATUS, &shader_complied);
 
-	if (!result)
+	if (!shader_complied)
 	{
+		GLchar log_message[1024];
 		//TO-DO: Need to fix the debug message (for easy debugging)
 		//current issue: misspelt a data type (sampler as sample) wrong error message
 		//Error message was generic syntax error, unexpected IDENTIFIER, expecting
 		// LEFT_BRACE or COMMA or SEMICOLON.
-		glGetShaderInfoLog(shaderid, sizeof(eLog), NULL, eLog);
-		DEBUG_LOG_WARNING("[SHADER]: Couldn't create a shader, \n", eLog, "File: ", source);
+		glGetShaderInfoLog(shaderid, 1024, NULL, log_message);
+		DEBUG_LOG_WARNING("[SHADER]: Couldn't create a shader, \n", log_message, "File: ", source);
 		
-		exit(-1);
+		if(!soft)
+			exit(-1);
 	}
 
 	return shaderid;
@@ -181,4 +250,24 @@ int Shader::GetUniformLocation(const char* name)
 	else
 		mCacheUniformLocations[str_name] = location;
 	return location;
+}
+
+ShaderMetaData Shader::CacheMetaData(const std::string& name, const std::string& ver, const std::string& frag, const std::string& geo)
+{
+	ShaderMetaData meta{};
+	strncpy(meta.name, name.c_str(), sizeof(meta.name));
+
+	//writer helper 
+	int write_cursor = 0;
+	auto write_meta_buf = [&](const std::string& s, int& offset)
+	{
+		offset = write_cursor;
+		std::memcpy(&meta.pathBuffer[write_cursor], s.c_str(), s.size() + 1);
+		write_cursor += s.size() + 1;
+	};
+
+	write_meta_buf(ver, meta.vertexOffset);
+	write_meta_buf(frag, meta.fragmentOffset);
+	write_meta_buf(geo, meta.geometryOffset);
+	return meta;
 }

@@ -178,6 +178,9 @@ void Application::Run()
 		if (mPtrInputEventHandle)
 			mPtrInputEventHandle->FlushFrameInputs();
 		mDisplayManager.FlushAndSwapBuffer();
+
+		if (mGfxProgram)
+			mGfxProgram->OnLateUpdate(mFrameDeltaTime);
 		//printf("===============================================END OF FRAME=====================================================\n");
 		//DEBUG_LOG("Current Heap Memory Allocation Count: ", mem_alloc_tracker.CurrentAllocation(), ".");
 		//std::cout << "Current Heap Memory Allocation Size: " << mem_alloc_tracker.CurrentUsage() << " bytes.\n";

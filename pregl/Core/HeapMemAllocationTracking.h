@@ -4,7 +4,7 @@
 #include "Log.h"
 
 
-#define ENABLE_HEAP_MEM_TRACKING 1
+#define ENABLE_HEAP_MEM_TRACKING 0
 #define ENABLE_FULL_PROFILING 0
 
 namespace Util {

@@ -306,28 +306,38 @@ void UI::Windows::MaterialsEditor(MaterialList materials)
 
 #include "Core/HeapMemAllocationTracking.h"
 
-void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture)
+//void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture)
+void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture, const char* name, bool* open_flag)
 {
 	//OPEN_BLOCK_MEM_TRACKING_PROFILE(texture);
 
-	char name_buf[64];
-	snprintf(name_buf, sizeof(name_buf), "Texture Editor Window GPU: %d {WIP}.", int(texture.GetID()));
-	HELPER_REGISTER_UIFLAG(name_buf, open_flag);
+	//snprintf(name_buf, sizeof(name_buf), "Texture Editor Window GPU: %d {WIP}.", int(texture.GetID()));
+	//HELPER_REGISTER_UIFLAG_MULTICALL(name_buf, open_flag);
 	ImGui::PushID(&texture);
 	//if (ImGui::Begin(name_buf.c_str(), &open_flag))
-	if (ImGui::Begin(name_buf, &open_flag))
+	if (ImGui::Begin(name, open_flag))
 	{
 		ImVec2 ui_win_size = ImGui::GetWindowSize();
 		ImVec2 preview_texture_size = ImVec2(ui_win_size.x * 0.5f, ui_win_size.x * 0.5f);
 
-		preview_texture_size.y *= (texture.GetHeight() / texture.GetWidth()); //invert
+		
 
 		ImVec2 top_left = ImGui::GetCursorPos();
-		ImGui::Image((ImTextureID)(intptr_t)texture.GetID(), preview_texture_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+		//ImGui::PushID(&top_left);
+		static ImVec2 test_uv0 = ImVec2(0, 0);
+		static ImVec2 test_uv1 = ImVec2(1, 1);
+		ImGui::SliderFloat2("UV0", &test_uv0[0], 0.0f, 1.0f, "%.2f");
+		ImGui::SliderFloat2("UV1", &test_uv1[0], 0.0f, 1.0f, "%.2f");
+		//ImGui::PopID();
+		//ImGui::Image((ImTextureID)(intptr_t)texture.GetID(), preview_texture_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+		//ImGui::Image((ImTextureID)(intptr_t)texture.GetID(), preview_texture_size);
+		ImGui::Image((ImTextureID)(intptr_t)texture.GetID(), preview_texture_size, test_uv0, test_uv1);
 
 		///*static*/ int curr_tex_type = (int)texture.GetType();
 		///*static*/ int curr_img_format = (int)texture.GetFormat();
 
+		char name_buf[64];
 		snprintf(name_buf, sizeof(name_buf), "Texture GPU ID: %d.", texture.GetID());
 		ImGui::Text(name_buf);
 		snprintf(name_buf, sizeof(name_buf), "Texture  Size: %d x %d.", texture.GetWidth(), texture.GetHeight());

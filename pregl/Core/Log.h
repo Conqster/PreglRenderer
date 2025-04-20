@@ -106,7 +106,7 @@ namespace Debug {
 			((out << std::forward<N>(n)), ...);
 			out << "\n";
 		}
-	}
+	} // namespace detail
 
 
 	//compile time verification

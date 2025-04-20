@@ -12,6 +12,8 @@
 #include "Renderer/GPUVertexData.h"
 #include "Core/EditorCamera.h"
 
+#include "Core/ShaderHotReloadTracker.h"
+
 class RenderableMesh;
 class BaseMaterial;
 class ImVec2;
@@ -23,6 +25,7 @@ public:
 
 	virtual void OnInitialise(AppWindow* display_window) override;
 	virtual void OnUpdate(float delta_time) override;
+	virtual void OnLateUpdate(float delta_time) override;
 	virtual void OnDestroy() override;
 	virtual void OnUI() override;
 
@@ -36,6 +39,9 @@ private:
 
 	Shader mShader;
 	Shader mShadowShader;
+	Shader mTexScrceenShader;
+	Util::ShaderHotReloadTracker mShaderHotReloadTracker;
+	
 	glm::mat4 mLightProjViewMat = glm::mat4(1.0f);
 	GPUResource::ShadowMap mShadowMapFBO;
 	GPUResource::UniformBuffer mCameraUBO;
@@ -55,7 +61,7 @@ private:
 	std::shared_ptr<BaseMaterial> mQuadMaterial = nullptr;
 	std::shared_ptr<BaseMaterial> mCubeMaterial = nullptr;
 
-	std::vector<glm::mat4> m_SphereTransform;
+	std::vector<glm::mat4> mSphereTransform;
 	std::vector<glm::mat4> m_PlaneTransform;
 	std::vector<glm::mat4> m_CubeTransform;
 	std::vector<glm::mat4> m_ConeTransform;

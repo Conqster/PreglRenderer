@@ -20,9 +20,8 @@
 
 #include "Core/UI_Window_Panel_Editors.h"
 
-#include <random>
-
 #include "Core/HeapMemAllocationTracking.h"
+#include "Core/Profiler.h"
 
 void SampleLightingProgram::OnInitialise(AppWindow* display_window)
 {
@@ -54,7 +53,6 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
 	//plane 
 	if (mQuadMaterial)
 	{
@@ -75,7 +73,7 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 	{
 		MaterialShaderHelper(mShader, *mSphereMaterial);
 		//Draw sphere
-		for (const auto& model : m_SphereTransform)
+		for (const auto& model : mSphereTransform)
 		{
 			mShader.SetUniformMat4("uModel", model);
 			mSphereMesh->Draw();
@@ -110,12 +108,63 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 	}
 
 
+	//Screen texture 
+	mTexScrceenShader.Bind();
+	mNoiseTex->Activate(0);
+	mQuadMesh->Draw();
+	mQuadMesh->DrawOutline();
+	mNoiseTex->Disactivate();
+
+	//quick visualise noise as sphere
+	//if (mSphereMesh)
+	//{
+	//	glm::mat4 world_trans = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 5.0f, 0.0f)) *
+	//							glm::scale(glm::mat4(1.0f), glm::vec3(0.2f));
+
+	//	//define center
+	//	if (mCubeMesh)
+	//	{
+	//		mShader.SetUniformMat4("uModel", world_trans);
+	//		mCubeMesh->DrawOutline();
+
+	//		//borders
+	//		//top left
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(1.0f, 0.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		//bottom left
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(1.0f, -1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		//top right
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans,3.0f * glm::vec3(-1.0f, 0.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		//bottom right
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(-1.0f, -1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		//mid top 
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(0.0f, 1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		//mid bottom 
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(0.0f, -1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(1.0f, 1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, 3.0f * glm::vec3(-1.0f, 1.0f, 0.0f)));
+	//		mCubeMesh->DrawOutline();
+	//	}
+	//	MaterialShaderHelper(mShader, *mSphereMaterial);
+	//	for (const auto& n : mNoisePosData)
+	//	{
+	//		mShader.SetUniformMat4("uModel", glm::translate(world_trans, n * 3.0f));
+	//		mSphereMesh->Draw();
+	//	}
+	//}
+
 	glDisable(GL_BLEND);
 
 	//Draw a sample line connecting spheres
-	for (int i = 1; i < m_SphereTransform.size(); i++)
+	for (int i = 1; i < mSphereTransform.size(); i++)
 	{
-		DebugGizmosRenderer::Instance().DrawLine(m_SphereTransform[i - 1][3], m_SphereTransform[i][3], glm::vec3(0.0f, 0.0f, 1.0f));
+		DebugGizmosRenderer::Instance().DrawLine(mSphereTransform[i - 1][3], mSphereTransform[i][3], glm::vec3(0.0f, 0.0f, 1.0f));
 	}
 
 	//ROTATE ALL CONEs
@@ -128,6 +177,12 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 		//glm::vec3 translate = model[3];
 		//model = glm::translate(origin, translate);
 	}
+
+}
+
+void SampleLightingProgram::OnLateUpdate(float delta_time)
+{
+	mShaderHotReloadTracker.Update();
 }
 
 void SampleLightingProgram::OnDestroy()
@@ -179,7 +234,8 @@ void SampleLightingProgram::OnUI()
 	};
 	UI::Windows::MaterialsEditor(mMaterialList);
 
-	UI::Windows::SingleTextureEditor(*mQuadMaterial->diffuseMap);
+	//UI::Windows::SingleTextureEditor(*mQuadMaterial->diffuseMap);
+	HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mQuadMaterial->diffuseMap), dm_open_flag);
 
 	/*static bool test = */ HELPER_REGISTER_UIFLAG("Lets Go", p_open_flag);
 
@@ -197,10 +253,16 @@ void SampleLightingProgram::OnUI()
 	}
 
 	if (mNoiseTex)
-		UI::Windows::SingleTextureEditor(*mNoiseTex);
+	{
+		HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mNoiseTex), nt_open_flag);
+		//UI::Windows::SingleTextureEditor(*mNoiseTex);
+	}
 
 	if (mNoiseTex2)
-		UI::Windows::SingleTextureEditor(*mNoiseTex2);
+	{
+		HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mNoiseTex2), nt_open_flag);
+		//UI::Windows::SingleTextureEditor(*mNoiseTex2);
+	}
 
 }
 
@@ -267,7 +329,7 @@ void SampleLightingProgram::CreateObjects()
 
 	//Scene object transformations
 	glm::mat4 mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)) *
-		glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+		glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
 		glm::scale(glm::mat4(1.0f), glm::vec3(50.0f));
 	m_PlaneTransform.push_back(mat);
 
@@ -280,7 +342,7 @@ void SampleLightingProgram::CreateObjects()
 		float x = (float)i * offset.x;
 		for (int j = 0; j < count_per_axis; j++)
 		{
-			m_SphereTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, (float)j * offset.y)));
+			mSphereTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, (float)j * offset.y)));
 		}
 	}
 
@@ -319,21 +381,15 @@ void SampleLightingProgram::CreateObjects()
 	//mPreviewTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.9f));
 	mPreviewShader.Create("preview_shader", "assets/shaders/lighting/PreviewMaterial.vert", "assets/shaders/lighting/PreviewMaterial.frag");
 
+	mTexScrceenShader.Create("tex screen shader", "assets/shaders/TextureToScreen.vert", "assets/shaders/TextureToScreen.frag");
+	mShaderHotReloadTracker.AddShader(&mTexScrceenShader);
 
-	std::uniform_real_distribution<float> random_floats(0.0f, 1.0f);
-	std::default_random_engine generator;
 	//Noise generation per pixel data 
 	std::vector<glm::vec3> noise_vector;
+	auto randomf = Util::Random::RNG<float>(Util::Random::rnd_b4mt, -1.0f, 1.0f);
 	for (uint16_t i = 0; i < 16; i++)
 	{
-		float x = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
-		float y = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
-		float z = Util::Random::Float(0.0f, 1.0f);
-
-		x = random_floats(generator) * 2.0f - 1.0f;
-		y = random_floats(generator) * 2.0f - 1.0f;
-
-		glm::vec3 noise(x, y, 0.0f);
+		glm::vec3 noise(randomf(), randomf(), 0.0f);
 		noise_vector.push_back(noise);
 	}
 
@@ -354,23 +410,36 @@ void SampleLightingProgram::CreateObjects()
 
 	mNoiseTex = std::make_shared<GPUResource::Texture>(4, 4, &noise_vector[0], tex);
 
-	//Util::Random::SetFloatDistRange(0.0f, 1.0f);
-	//Util::Random::SetFloatDistRange(-1.0f, 1.0f);
-	//overriden whole
-	for (uint16_t i = 0; i < 16; i++)
+
+	//black & white texure 
+	//requirement 
+	// single channel red 
+	// utility tyoe
+	// float data type
+	//
+	tex.format = GPUResource::IMGFormat::RED;
+	randomf.SetDistribution(0.0f, 1.0f);
+	//16x16
+	//1920 * 1080
+	//noise_vector.clear();
+	//noise_vector.resize(256);
+	noise_vector.reserve(300);
+	DEBUG_LOG("Vector Size", sizeof(noise_vector), ", count: ", noise_vector.size());
+
+	const int noise_width = 100;
+	const int noise_height = 101;
+	const int channel_count = 1;
+	const int noise_pixels = noise_width * noise_height * channel_count;
+	float* noise_buf = new float[noise_pixels];
+	for (uint16_t i = 0; i+1 < noise_pixels; i += 2)
 	{
-		//float x = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
-		//float y = Util::Random::Float(0.0f, 1.0f) * 2.0f - 1.0f;
-		//float z = Util::Random::Float(0.0f, 1.0f);
-
-		float x = Util::Random::GetFloatRndDist() * 2.0f - 1.0f;
-		float y = Util::Random::GetFloatRndDist() * 2.0f - 1.0f;
-
-		glm::vec3 noise(x, y, 0.0f);
-		noise_vector[i] = noise;
+		noise_buf[i] = randomf();
+		noise_buf[i+1] = randomf();
 	}
+	if (noise_pixels % 2 != 0)
+		noise_buf[noise_pixels - 1] = randomf();
 
-	mNoiseTex2= std::make_shared<GPUResource::Texture>(4, 4, &noise_vector[0], tex);
+	mNoiseTex2= std::make_shared<GPUResource::Texture>(noise_width, noise_height, noise_buf, tex);
 }
 
 void SampleLightingProgram::UpdateCameraUBO(EditorCamera& cam, float aspect_ratio)
@@ -385,9 +454,7 @@ void SampleLightingProgram::UpdateCameraUBO(EditorCamera& cam, float aspect_rati
 	mCameraUBO.SetSubDataByID(&(cam.ProjMat(aspect_ratio)[0][0]), sizeof(glm::mat4), offset_ptr);
 	offset_ptr += sizeof(glm::mat4);
 	mCameraUBO.SetSubDataByID(&(cam.ViewMat()[0][0]), sizeof(glm::mat4), offset_ptr);
-	DEBUG_LOG("Int size: ", sizeof(int), " bytes.");
-	DEBUG_LOG("uInt8 size: ", sizeof(uint8_t), " bytes.");
-	DEBUG_LOG("uInt16 size: ", sizeof(uint16_t), " bytes.");
+
 	float offset = 5.0f;
 	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 1.0f, 0.0f) + (mDirLight.direction * offset), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //world up 0, 1, 0
 	glm::mat4 proj = glm::ortho(-30.f, 30.f, -30.f, 30.f, 0.1f, 100.0f);
@@ -450,7 +517,7 @@ void SampleLightingProgram::ShadowPass()
 	if (mSphereMaterial)
 	{
 		//Draw sphere
-		for (const auto& model : m_SphereTransform)
+		for (const auto& model : mSphereTransform)
 		{
 			mShadowShader.SetUniformMat4("uModel", model);
 			mSphereMesh->Draw();

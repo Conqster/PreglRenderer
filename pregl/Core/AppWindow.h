@@ -13,7 +13,7 @@ public:
 	std::string& GetName() { return mName; }
 	unsigned int GetWidth() { return  mWindowWidth; }
 	unsigned int GetHeight() { return mWindowHeight; }
-	float GetAspectRatio() {return (float)mWindowWidth / (float)mWindowHeight;}
+	float GetAspectRatio() {return float(mWindowWidth) / float(mWindowHeight);}
 
 	void ToggleLockCursor();
 	inline bool const GetLockCursor() const { return mLockCursor; }

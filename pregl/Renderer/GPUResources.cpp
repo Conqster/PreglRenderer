@@ -24,6 +24,9 @@ namespace GPUResource {
 				case IMGFormat::RGBA32F: return GL_RGBA32F;
 
 				case IMGFormat::RGBA16: return GL_RGBA16;
+
+				case IMGFormat::RED: return GL_RED;
+				case IMGFormat::RG: return GL_RG;
 			}
 
 			DEBUG_LOG_ERROR("[TEXTURE]: Format not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
