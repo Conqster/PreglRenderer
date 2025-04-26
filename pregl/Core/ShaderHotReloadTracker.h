@@ -4,6 +4,8 @@
 
 #include "NonCopyable.h"
 
+#include <array>
+
 
 class Shader;
 namespace Util{
@@ -25,6 +27,7 @@ namespace Util{
 	};
 
 
+	constexpr uint8_t gMaxTrackingShader = 10;
 	class ShaderHotReloadTracker : public NonCopyable
 	{
 	public:
@@ -34,8 +37,10 @@ namespace Util{
 		void AddShader(Shader* shader);
 		void Update();
 	private:
-		ShaderFilestamp mTrackingShader;
+		//ShaderFilestamp mTrackingShader;
 
+		uint8_t mShaderCount = 0;
+		std::array<ShaderFilestamp, gMaxTrackingShader> mTrackingShaders;
 
 		//utilises
 		bool CheckShaderFileChanges(ShaderFilestamp shader_fs, ShaderTrackTypeIdx shader_idx);

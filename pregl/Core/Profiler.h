@@ -39,7 +39,9 @@ namespace Profiler
 
 			if(mDurationMS)
 				*mDurationMS = mDuration.count() * 1000.0f;
+#if LOG_TO_CONSOLE
 			DEBUG_LOG(mName, " - time took: ", mDuration.count() * 1000.0f, "ms.");
+#endif // LOG_TO_CONSOLE
 			mDurationMS = nullptr;
 		}
 	}; //TimeTaken struct

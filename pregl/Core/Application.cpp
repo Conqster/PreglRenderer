@@ -140,12 +140,6 @@ void Application::Run()
 		write_offset += snprintf(win_title_char_buf + write_offset, sizeof(win_title_char_buf) - write_offset, "%.2fms | %.2fFPS",
 						mFrameDeltaTime, (1.0f / mFrameDeltaTime));
 
-		
-
-		//28
-		DEBUG_LOG("Titile Prinf Update size ", sizeof(win_title_char_buf), ".size(): ", write_offset);
-
-
 		if (Input::GetKeyUp(IKeyCode::V))
 			mDisplayManager.SetVSync(!mDisplayManager.GetVSync());
 

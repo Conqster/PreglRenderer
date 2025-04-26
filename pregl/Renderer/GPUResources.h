@@ -5,6 +5,9 @@
 #include <array>
 #include <string>
 
+#include <vector>
+
+
 
 namespace GPUResource {
 
@@ -260,8 +263,9 @@ namespace GPUResource {
 		Framebuffer(unsigned int width, unsigned int height);
 		~Framebuffer() { Delete(); }
 		bool Generate(unsigned int width, unsigned int height);
-		bool ResizeBuffer(unsigned int width, unsigned int height);
 
+		bool ResizeBuffer(unsigned int width, unsigned int height);
+		void ResizeBuffer2(unsigned int width, unsigned int height);
 		void Bind();
 		void UnBind();
 		/// <summary>
@@ -290,6 +294,43 @@ namespace GPUResource {
 			mRenderbufferID;
 		
 		Texture mRenderTexture;
+	};
+
+	/////////////////////////////////////////////////////////////////////////////
+	// MultiRenderTarget
+	/////////////////////////////////////////////////////////////////////////////
+	class MultiRenderTarget : NonCopyable
+	{
+	public:
+		MultiRenderTarget() = default;
+		MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count = 3, TextureParameter render_target_tex_para_config[] = {});
+		~MultiRenderTarget() { Delete(); }
+		bool Generate(unsigned int width, unsigned int height, unsigned int count = 3, TextureParameter render_target_tex_para_config[] = nullptr);
+
+		void ResizeBuffer(unsigned int width, unsigned int height);
+		void Bind();
+		void UnBind();
+		/// <summary>
+		/// Deletes Framebuffer and its resources
+		/// </summary>
+		void Delete();
+
+		void BindTextureIdx(unsigned int idx, unsigned int slot = 0);
+
+		inline unsigned int GetWidth() const { return mWidth; }
+		inline unsigned int GetHeight() const { return mHeight; }
+		inline unsigned int GetRenderTargetTextureGPU_ID(unsigned int idx = 0) { return mRenderTextures[static_cast<size_t>(idx)].GetID(); }
+		inline Texture GetRenderTargetTexture(unsigned int idx = 0) { return mRenderTextures[static_cast<size_t>(idx)]; }
+		inline std::vector<Texture>& GetRenderTargetTextures() { return mRenderTextures; }
+
+	private:
+		unsigned int mWidth,
+			mHeight = 256;
+
+		unsigned int mID,
+			mRenderbufferID;
+
+		std::vector<Texture> mRenderTextures;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////

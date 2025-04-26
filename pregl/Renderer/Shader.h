@@ -18,9 +18,9 @@ struct ShaderMetaData
 {
 	char name[32];
 	char pathBuffer[256];
-	int vertexOffset = 0;
-	int fragmentOffset = 0;
-	int geometryOffset = 0;
+	int16_t vertexOffset = 0;
+	int16_t fragmentOffset = 0;
+	int16_t geometryOffset = -1;
 };
 
 class Shader

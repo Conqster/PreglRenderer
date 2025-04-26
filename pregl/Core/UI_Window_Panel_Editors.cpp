@@ -150,6 +150,7 @@ void MaterialShaderHelper(Shader& shader, const BaseMaterial& mat)
 	shader.SetUniformVec3("uMaterial.specular", mat.specular);
 	//shinness; float
 	shader.SetUniform1f("uMaterial.shinness", mat.shinness);
+	shader.SetUniform1f("uOpacity", mat.opacity);
 }
 
 
@@ -238,6 +239,7 @@ void UI::Windows::MaterialsEditor(MaterialList materials)
 		update_preview_fbo |= ImGui::ColorEdit3("Diffuse", &mat->diffuse[0]);
 		update_preview_fbo |= ImGui::ColorEdit3("Ambient", &mat->ambient[0]);
 		update_preview_fbo |= ImGui::ColorEdit3("Specular", &mat->specular[0]);
+		update_preview_fbo |= ImGui::SliderFloat("Opacity", &mat->opacity, 0.0f, 1.0f, "%.1f");
 		update_preview_fbo |= ImGui::SliderFloat("Shinness", &mat->shinness, 8.0f, 256.0f, "%.0f");
 		update_preview_fbo |= ImGui::SliderFloat("Ambinent Ratio", &mPreviewAmbientRatio, 0.0f, 1.0f, "%.1f");
 		//diffuse map
@@ -385,6 +387,52 @@ void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture, const char*
 	ImGui::End();
 	ImGui::PopID();
 	///CLOSE_BLOCK_MEM_TRACKING_PROFILE(texture);
+}
+
+
+void UI::Windows::RenderTargetViewport(GPUResource::Framebuffer& render_target)
+{
+	if (ImGui::Begin("Render Target Viewport"))
+	{
+		ImVec2 ui_win_size = ImGui::GetWindowSize();
+		float target_img_width = ui_win_size.x * 0.75f;
+		ImVec2 preview_panel_size = ImVec2(target_img_width, target_img_width);
+		preview_panel_size.y  *= (static_cast<float>(render_target.GetHeight()) / static_cast<float>(render_target.GetWidth()));
+
+		ImVec2 top_left = ImGui::GetCursorPos();
+		ImGui::Image((ImTextureID)(intptr_t)render_target.GetRenderTextureGPU_ID(),
+			preview_panel_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+
+		char text_buf[64];
+		snprintf(text_buf, sizeof(text_buf), "Texture  Size: %d x %d, aspect ratio: %.1f.", render_target.GetWidth(), render_target.GetHeight(), (static_cast<float>(render_target.GetWidth()) / static_cast<float>(render_target.GetHeight())));
+		ImGui::Text(text_buf);
+
+	}
+	ImGui::End();
+}
+
+void UI::Windows::MultiRenderTargetViewport(GPUResource::MultiRenderTarget& multi_render_target)
+{
+	if (ImGui::Begin("Multi Render Target Viewport"))
+	{
+		ImVec2 ui_win_size = ImGui::GetWindowSize();
+		float target_img_width = ui_win_size.x * 0.75f;
+		ImVec2 preview_panel_size = ImVec2(target_img_width, target_img_width);
+		preview_panel_size.y *= (static_cast<float>(multi_render_target.GetHeight()) / static_cast<float>(multi_render_target.GetWidth()));
+
+		//ImVec2 top_left = ImGui::GetCursorPos();
+		char text_buf[64];
+		snprintf(text_buf, sizeof(text_buf), "Frame buffer  Size: %d x %d.", multi_render_target.GetWidth(), multi_render_target.GetHeight());
+		ImGui::Text(text_buf);
+		for (auto& t : multi_render_target.GetRenderTargetTextures())
+		{
+			ImGui::Image((ImTextureID)(intptr_t)t.GetID(), preview_panel_size, ImVec2(0.0f, 1.0f), ImVec2(1.0f, 0.0f));
+			ImGui::Text("GPU ID: %d", t.GetID());
+		}
+
+
+	}
+	ImGui::End();
 }
 
 

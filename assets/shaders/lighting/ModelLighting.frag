@@ -37,6 +37,8 @@ uniform Material uMaterial;
 uniform DirectionalLight uDirectionalLight;
 uniform bool uPhongRendering;
 
+uniform float uOpacity = 1.0f;
+
 //Functions
 vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 V);
 float DirShadowCalculation(vec4 shadow_coord);
@@ -60,6 +62,7 @@ void main()
 	vec3 gamma_corrected = pow(result_colour, vec3(1.0f/2.2f));
 	
 	FragColour = vec4(result_colour, 1.0f);
+	FragColour.a = uOpacity;
 	//FragColour = vec4(gamma_corrected, 1.0f);
 	
 
@@ -75,7 +78,7 @@ vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 
 	vec3 Ld = normalize(light.direction);//light direction
 	//Lambert cosine law
 	float factor = max(dot(N, Ld), 0.0f);
-	vec3 diffuse = light.diffuse * mat.diffuse * factor;
+	vec3 diffuse = light.diffuse * mat.diffuse * factor; 
 	
 	float specularity = 0.0f;
 	//specular component (Blinn-Phong)

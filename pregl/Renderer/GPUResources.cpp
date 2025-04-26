@@ -106,7 +106,7 @@ namespace GPUResource {
 			DEBUG_LOG_WARNING("[GPUResource - Texture]: Texture already loaded.");
 			//void* old_px_data = nullptr;
 			//void* old_px_data = new unsigned char[mWidth * mHeight * Utilities::IMGFormatChannelCount(mParameter.imgInternalFormat)];
-			void* old_px_data = RetrieveGPUImageBuffer();
+			void* old_px_data = nullptr; // RetrieveGPUImageBuffer();
 			//RetrieveGPUImageBuffer(old_px_data);
 			GLCall(glBindTexture(GL_TEXTURE_2D, mID));
 			//glGetTexImage(GL_TEXTURE_2D, 0, ToOpenGL::Format(mParameter.imgInternalFormat), ToOpenGL::Type(mParameter.pxDataType), old_px_data);
@@ -246,6 +246,74 @@ namespace GPUResource {
 	}
 
 
+
+	/////////////////////////////////////////////////////////////////////////////
+	// SHADOW MAP
+	/////////////////////////////////////////////////////////////////////////////
+	ShadowMap::ShadowMap(unsigned int in_size) : mSize(in_size)
+	{
+		Generate(in_size);
+	}
+
+	void ShadowMap::Generate(unsigned int size)
+	{
+		GLCall(glGenFramebuffers(1, &mID));
+
+		//generate img to render to (colour attachment/render texture) 
+		//Texture Parameter
+		TextureParameter tex_parameter{
+			IMGFormat::DEPTH,			//imgInternalFormat
+			TextureType::SHADOW_MAP,	//textureType
+
+			TexWrapMode::CLAMP,		//wrapMode
+			TexFilterMode::NEAREST,	//filterMode
+			DataType::FLOAT,			//pxDataType
+		};
+		mTexture.Generate(size, size, nullptr, tex_parameter);
+		mSize = size;
+		//just incase texture is un binded
+		mTexture.Bind();
+
+		float borderColour[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		GLCall(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColour));
+
+		GLCall(glBindFramebuffer(GL_FRAMEBUFFER, mID));
+		GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mTexture.GetID(), 0));
+		GLCall(glDrawBuffer(GL_NONE));
+		GLCall(glReadBuffer(GL_NONE));
+
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER]:  Shadow map FBO did not complete!!!!");
+			GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+			return;
+		}
+
+		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
+		GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Shadow Map Generated", (int)mSize);
+	}
+
+	void ShadowMap::Write()
+	{
+		glViewport(0, 0, mSize, mSize);
+		glBindFramebuffer(GL_FRAMEBUFFER, mID);
+	}
+
+	void ShadowMap::Read(unsigned int slot) const
+	{
+		mTexture.Activate(slot);
+	}
+
+	void ShadowMap::Destroy()
+	{
+		GLCall(glDeleteFramebuffers(1, &mID));
+		mTexture.Clear();
+		mID = 0;
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Shadow Map Destory.", (int)mSize);
+	}
+
 	/////////////////////////////////////////////////////////////////////////////
 	// FRAMEBUFFER
 	////////////////////////////////////////////////////////////////////////////
@@ -343,6 +411,51 @@ namespace GPUResource {
 		return true;
 	}
 
+	void Framebuffer::ResizeBuffer2(unsigned int width, unsigned int height)
+	{
+		//return;
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER - RESIZE]: Resizing FBO from width: ", mWidth, "height: ", mHeight);
+		if (mWidth == width && mHeight == height)
+		{
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]: No need to Resize, FBO width: ", mWidth, "height: ", mHeight);
+			return;
+		}
+
+		mWidth = width;
+		mHeight = height;
+		//Texture Parameter
+		TextureParameter tex_parameter{
+						IMGFormat::RGB,			//imgInternalFormat
+						TextureType::RENDER,	//textureType
+
+						TexWrapMode::CLAMP,		//wrapMode
+						TexFilterMode::LINEAR,	//filterMode
+						DataType::FLOAT,		//pxDataType
+		};
+
+
+		//texture checks if the same texture gpu id was created before,
+		//if so a new is not generate but old one parameters gets modified
+		mRenderTexture.Generate(mWidth, mHeight, nullptr, tex_parameter);
+
+		//resize render buffer
+		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]:   Framebuffer did not complete!!!!");
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+			return;
+		}
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER - RESIZE]: Framebuffer Resized, width: ", mWidth, ", height: ", (int)mHeight);
+		return;
+	}
+
+
+
 	void Framebuffer::Bind()
 	{
 		glViewport(0, 0, mWidth, mHeight);
@@ -389,72 +502,134 @@ namespace GPUResource {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
-	// SHADOW MAP
+	// MultiRenderTarget
 	/////////////////////////////////////////////////////////////////////////////
-	ShadowMap::ShadowMap(unsigned int in_size) : mSize(in_size)
+
+	MultiRenderTarget::MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count, TextureParameter render_target_tex_para_config[])
 	{
-		Generate(in_size);
+		Generate(width, height, count, render_target_tex_para_config);
 	}
 
-	void ShadowMap::Generate(unsigned int size)
+	bool MultiRenderTarget::Generate(unsigned int width, unsigned int height, unsigned int count, TextureParameter render_target_tex_para_config[])
 	{
-		GLCall(glGenFramebuffers(1, &mID));
 
-		//generate img to render to (colour attachment/render texture) 
-		//Texture Parameter
-		TextureParameter tex_parameter{
-			IMGFormat::DEPTH,			//imgInternalFormat
-			TextureType::SHADOW_MAP,	//textureType
 
-			TexWrapMode::CLAMP,		//wrapMode
-			TexFilterMode::NEAREST,	//filterMode
-			DataType::FLOAT,			//pxDataType
-		};
-		mTexture.Generate(size, size, nullptr, tex_parameter);
-		mSize = size;
-		//just incase texture is un binded
-		mTexture.Bind();
+		glGenFramebuffers(1, &mID);
+		glBindFramebuffer(GL_FRAMEBUFFER, mID);
 
-		float borderColour[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-		GLCall(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColour));
+		///////////////////////////////////////////////////////////////////////
+		// create colour attachment texture for frame buffer
+		///////////////////////////////////////////////////////////////////////
+		// 
+		
+		mWidth = width;
+		mHeight = height;
+		mRenderTextures.clear();
+		mRenderTextures.assign(count, {}); // <-- assign default 
+		//check is parameter is not empty 
+		if (render_target_tex_para_config)
+		{
+			for (size_t i = 0; i < mRenderTextures.size(); i++)
+			{
+				mRenderTextures[i].Generate(mWidth, mHeight, nullptr, render_target_tex_para_config[i]);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, mRenderTextures[i].GetID(), 0);
+			}
+		}
 
-		GLCall(glBindFramebuffer(GL_FRAMEBUFFER, mID));
-		GLCall(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mTexture.GetID(), 0));
-		GLCall(glDrawBuffer(GL_NONE));
-		GLCall(glReadBuffer(GL_NONE));
 
+		std::vector<unsigned int> attachment;
+		attachment.reserve(count);
+		for (unsigned int i = 0; i < count; i++)
+			attachment.emplace_back(GL_COLOR_ATTACHMENT0 + i);
+		glDrawBuffers(count, &attachment[0]);
+
+		///////////////////////////////////////////////////////////////////////
+		// create a render buffer object for depth and stencil 
+		///////////////////////////////////////////////////////////////////////
+		glGenRenderbuffers(1, &mRenderbufferID);
+		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbufferID);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER]:  Shadow map FBO did not complete!!!!");
-			GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER]:   Framebuffer did not complete!!!!");
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+			return false;
+		}
+
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Framebuffer Generated, width: ", mWidth, "height: ", mHeight);
+		return true;
+	}
+
+
+	void MultiRenderTarget::ResizeBuffer(unsigned int width, unsigned int height)
+	{
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER - RESIZE]: Resizing FBO from width: ", mWidth, "height: ", mHeight);
+		if (mWidth == width && mHeight == height)
+		{
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]: No need to Resize, FBO width: ", mWidth, "height: ", mHeight);
 			return;
 		}
 
-		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
-		GLCall(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Shadow Map Generated", (int)mSize);
+		mWidth = width;
+		mHeight = height;
+
+		//texture checks if the same texture gpu id was created before,
+		//if so a new is not generate but old one parameters gets modified
+		for (auto& t : mRenderTextures)
+		{
+			TextureParameter para = t.GetParameter();
+			t.Generate(mWidth, mHeight, nullptr, para);
+		}
+
+		//resize render buffer
+		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]:   Framebuffer did not complete!!!!");
+			glBindRenderbuffer(GL_RENDERBUFFER, 0);
+			return;
+		}
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+
+		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER - RESIZE]: Framebuffer Resized, width: ", mWidth, ", height: ", (int)mHeight);
+		return;
 	}
 
-	void ShadowMap::Write()
+	void MultiRenderTarget::Bind()
 	{
-		glViewport(0, 0, mSize, mSize);
+		glViewport(0, 0, mWidth, mHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, mID);
 	}
 
-	void ShadowMap::Read(unsigned int slot) const
+	void MultiRenderTarget::UnBind()
 	{
-		mTexture.Activate(slot);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void ShadowMap::Destroy()
+	void MultiRenderTarget::Delete()
 	{
-		GLCall(glDeleteFramebuffers(1, &mID));
-		mTexture.Clear();
-		mID = 0;
-		DEBUG_LOG_STATUS("[GPUResource - FRAMEBUFFER]: Shadow Map Destory.", (int)mSize);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDeleteFramebuffers(1, &mID);
+		glDeleteRenderbuffers(1, &mRenderbufferID);
+		for (auto& t : mRenderTextures)
+			t.Clear();
 	}
 
+	void MultiRenderTarget::BindTextureIdx(unsigned int idx, unsigned int slot)
+	{
+		PGL_ASSERT(idx > mRenderTextures.size(), "idx out side render target count bounds.");
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_2D, mRenderTextures[idx].GetID());
+	}
+
+
+	
 
 	/////////////////////////////////////////////////////////////////////////////
 	// UNIFORM BUFFER
@@ -481,7 +656,7 @@ namespace GPUResource {
 		// need to configure which block to bind to see BindBufferRndIdx
 		//GLCall(glBindBufferRange(GL_UNIFORM_BUFFER, 0, m_ID, 0, size));
 
-		DEBUG_LOG_STATUS("[GPUResource - UNIFROMBUFFER]: buffer generated id: ", mID, ", size: ", (int)size);
+		DEBUG_LOG_STATUS("[GPUResource - UNIFROMBUFFER]: buffer generated id: ", mID, ", size: ", static_cast<int>(size));
 		mLoaded = true;
 	}
 	void UniformBuffer::Bind() const
@@ -513,6 +688,7 @@ namespace GPUResource {
 			mLoaded = false;
 		}
 	}
+
 
 
 

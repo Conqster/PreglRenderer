@@ -259,15 +259,16 @@ ShaderMetaData Shader::CacheMetaData(const std::string& name, const std::string&
 
 	//writer helper 
 	int write_cursor = 0;
-	auto write_meta_buf = [&](const std::string& s, int& offset)
+	auto write_meta_buf = [&](const std::string& s, int16_t& offset)
 	{
-		offset = write_cursor;
+		offset = static_cast<int16_t>(write_cursor);
 		std::memcpy(&meta.pathBuffer[write_cursor], s.c_str(), s.size() + 1);
 		write_cursor += s.size() + 1;
 	};
 
 	write_meta_buf(ver, meta.vertexOffset);
 	write_meta_buf(frag, meta.fragmentOffset);
-	write_meta_buf(geo, meta.geometryOffset);
+	if(!geo.empty())
+		write_meta_buf(geo, meta.geometryOffset);
 	return meta;
 }

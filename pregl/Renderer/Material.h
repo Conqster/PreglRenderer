@@ -18,6 +18,9 @@ struct BaseMaterial
 	glm::vec3 ambient = glm::vec3(1.0f);
 	glm::vec3 specular = glm::vec3(1.0f);
 
+	//quick hack 
+	float opacity = 1.0f;
+
 
 	std::shared_ptr<GPUResource::Texture> diffuseMap = nullptr;
 	std::shared_ptr<GPUResource::Texture> normalMap = nullptr;

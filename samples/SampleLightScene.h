@@ -69,7 +69,10 @@ private:
 
 	void CreateObjects();
 	void UpdateCameraUBO(EditorCamera& cam, float aspect_ratio);
-	void UpdateShaders();
+	void UpdateShaders(Shader& shader);
+
+
+	void DrawScene(Shader& shader);
 
 
 	void BeginFrame();
@@ -78,7 +81,7 @@ private:
 	void MaterialShaderHelper(Shader& shader, const BaseMaterial& mat);
 
 
-	void MainSceneUIEditor();
+	void DirectionLightUIEditor();
 	//Helper 
 	EditorCamera mMaterialPreviewCam;
 	GPUResource::Framebuffer mMaterialPreviewFBO;
@@ -93,4 +96,10 @@ private:
 	std::shared_ptr<GPUResource::Texture> mErrorTex = nullptr;
 	std::shared_ptr<GPUResource::Texture> mNoiseTex = nullptr;
 	std::shared_ptr<GPUResource::Texture> mNoiseTex2 = nullptr;
+	std::vector<glm::vec3> mSamplingKernelPoints;
+
+
+	GPUResource::Framebuffer mRenderTarget;
+	GPUResource::MultiRenderTarget mMultiRenderTarget;
+	Shader mTestMultiRenderShader;
 };

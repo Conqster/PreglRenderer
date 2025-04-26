@@ -1,6 +1,8 @@
 #version 400
 
-out vec4 FragColour;
+layout(location = 0) out vec4 FragColour;
+layout(location = 1) out vec3 oNormals;
+layout(location = 2) out vec3 oPosition;
 
 //--------------------Structs ------------------------/
 struct Material
@@ -26,21 +28,22 @@ in VS_OUT
 	vec3 fragPos;
 	vec3 viewPos;
 	vec3 normal;
-	vec2 texCoord;
+	vec4 fragPosLightSpace;
 }fs_in;
 
 
-uniform sampler2D uDiffuseMap;
+uniform sampler2D utextureMap;
+uniform sampler2D uShadowMap;
 
 uniform Material uMaterial;
 uniform DirectionalLight uDirectionalLight;
 uniform bool uPhongRendering;
-uniform float uOpacity = 1.0f;
 
-uniform float uAmbientRatio = 1.0f;
+uniform float uOpacity = 1.0f;
 
 //Functions
 vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 V);
+float DirShadowCalculation(vec4 shadow_coord);
 
 void main()
 {
@@ -61,24 +64,27 @@ void main()
 	vec3 gamma_corrected = pow(result_colour, vec3(1.0f/2.2f));
 	
 	FragColour = vec4(result_colour, 1.0f);
-	FragColour.a = 1.0f - uOpacity;
+	FragColour.a = uOpacity;
 	//FragColour = vec4(gamma_corrected, 1.0f);
 	
 
 	//FragColour = vec4(uMaterial.diffuse, 1.0f);
+	
+	oNormals = N;
+	oPosition = fs_in.fragPos;
 }
 
 
 vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 V)
 {
-	vec3 ambient = uAmbientRatio * light.ambient * mat.ambient;
+	vec3 ambient = 0.2f * light.ambient * mat.ambient;
 
 	//diffuse component
 	vec3 Ld = normalize(light.direction);//light direction
 	//Lambert cosine law
 	float factor = max(dot(N, Ld), 0.0f);
-	vec3 diffuse = light.diffuse * mat.diffuse * factor;
-	diffuse *=  texture(uDiffuseMap, fs_in.texCoord).rgb;
+	vec3 diffuse = light.diffuse * mat.diffuse * factor; 
+	
 	float specularity = 0.0f;
 	//specular component (Blinn-Phong)
 	if(!uPhongRendering)
@@ -92,7 +98,32 @@ vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 
 		specularity = pow(max(dot(N, Ld), 0.0f), mat.shinness);
 	}
 	vec3 specular = light.specular * mat.specular * specularity;
-	return ambient + diffuse + specular;
+
+	float shadow = DirShadowCalculation(fs_in.fragPosLightSpace);
+	return ambient + ((1.0f - shadow) * diffuse + specular);
 }
 
 
+float DirShadowCalculation(vec4 shadow_coord)
+{
+	//project texture coordinate & fecth the center sample
+	vec3 p = shadow_coord.xyz / shadow_coord.w;
+	
+	p = p * 0.5f + 0.5f;
+	
+	//Using PCF
+    float shadow = 0.0f;
+	float bias = 0.00f;
+    vec2 texelSize = 1.0f / textureSize(uShadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(uShadowMap, p.xy + vec2(x, y) * texelSize).r;
+            shadow += p.z - bias > pcfDepth ? 1.0f : 0.0f;
+        }
+    }
+    shadow /= 10.0f;
+    
+    return shadow;
+}
