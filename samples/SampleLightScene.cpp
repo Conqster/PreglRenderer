@@ -6,19 +6,19 @@
 #include "Loader/Loader.h"
 #include "Loader/ModelLoader.h"
 
-#include "Renderer/Material.h"
 #include <GLM/glm/gtc/matrix_transform.hpp>
 
 #include "Core/EditorCamera.h"
 
-#include <libs/imgui/imgui.h>
 #include "glm/gtc/quaternion.hpp"
 
 #include "Core/Log.h"
 
-#include "Renderer/DebugGizmosRenderer.h"
 
+#include "Renderer/Material.h"
+#include "Renderer/DebugGizmosRenderer.h"
 #include "Core/UI_Window_Panel_Editors.h"
+#include <libs/imgui/imgui.h>
 
 #include "Core/HeapMemAllocationTracking.h"
 #include "Core/Profiler.h"
@@ -78,129 +78,6 @@ void SampleLightingProgram::OnUpdate(float delta_time)
 		DebugGizmosRenderer::Instance().DrawLine(mSphereTransform[i - 1][3], mSphereTransform[i][3], glm::vec3(0.0f, 0.0f, 1.0f));
 	}
 
-	//ROTATE ALL CONEs
-	static glm::mat4 origin = glm::mat4(1.0f);
-	//origin = glm::rotate(glm::mat4(1.0f), glm::radians(30.0f * delta_time), glm::vec3(0.0f, 1.0f, 0.0f));
-	for (auto& model : m_ConeTransform)
-	{
-		model = glm::translate(origin, glm::vec3(model[3])) * glm::rotate(model, glm::radians(15.0f * delta_time), glm::vec3(1.0f, 1.0f, 1.0f));
-		////fake retrive origin offset 
-		//glm::vec3 translate = model[3];
-		//model = glm::translate(origin, translate);
-	}
-
-
-
-
-
-	////Test render target
-	//mRenderTarget.Bind();
-	//glClearColor(mClearColour.r, mClearColour.g, mClearColour.b, mClearColour.a);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//mShader.Bind();
-	//mShadowMapFBO.Read(0);
-	//mShader.SetUniform1i("uShadowMap", 0);
-	//glEnable(GL_BLEND);
-	//glEnable(GL_DEPTH_TEST);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-
-	////plane 
-	//if (mQuadMaterial)
-	//{
-
-	//	MaterialShaderHelper(mShader, *mQuadMaterial);
-	//	//Draw planes
-	//	for (const auto& model : m_PlaneTransform)
-	//	{
-	//		mShader.SetUniformMat4("uModel", model);
-	//		mQuadMesh->Draw();
-	//	}
-	//}
-
-
-
-	//////sphere
-	////if (mSphereMaterial)
-	////{
-	////	MaterialShaderHelper(mShader, *mSphereMaterial);
-	////	//Draw sphere
-	////	for (const auto& model : mSphereTransform)
-	////	{
-	////		mShader.SetUniformMat4("uModel", model);
-	////		mSphereMesh->Draw();
-	////	}
-	////}
-
-
-
-	////cube
-	//if (mCubeMaterial)
-	//{
-	//	MaterialShaderHelper(mShader, *mCubeMaterial);
-	//	//Draw sphere
-	//	for (const auto& model : m_CubeTransform)
-	//	{
-	//		mShader.SetUniformMat4("uModel", model);
-	//		mCubeMesh->Draw();
-	//	}
-	//}
-
-
-	//if (mConeMesh)
-	//{
-	//	if (!mCubeMaterial)
-	//		MaterialShaderHelper(mShader, *mCubeMaterial);
-	//	//Draw sphere
-	//	for (const auto& model : m_ConeTransform)
-	//	{
-	//		mShader.SetUniformMat4("uModel", model);
-	//		mConeMesh->Draw();
-	//	}
-	//}
-
-
-	////Draw sphere
-	//MaterialShaderHelper(mShader, *mSphereMaterial);
-	//for (const auto& model : mSphereTransform)
-	//{
-	//	mShader.SetUniformMat4("uModel", model);
-	//	mSphereMesh->Draw();
-	//}
-
-
-
-	////sample origin 
-	//sample_origin_tran = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 4.0f, 0.0f));
-	////draw plane quad
-	//MaterialShaderHelper(mShader, *mCubeMaterial);
-	//mShader.SetUniformMat4("uModel", glm::rotate(sample_origin_tran, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	//mQuadMesh->Draw();
-	//mShader.SetUniformMat4("uModel", glm::rotate(sample_origin_tran, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	//mQuadMesh->DrawOutline();
-	//mShader.SetUniformMat4("uModel", glm::rotate(sample_origin_tran, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	//mQuadMesh->DrawOutline();
-	////sample points
-	//for (const auto& s : mSamplingKernelPoints)
-	//{
-	//	mShader.SetUniformMat4("uModel", glm::translate(sample_origin_tran, s) * glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)));
-	//	mSphereMesh->Draw();
-	//}
-	////sphere
-	//MaterialShaderHelper(mShader, *mSphereMaterial);
-	//mShader.SetUniformMat4("uModel", glm::scale(sample_origin_tran, glm::vec3(2.0f)));
-	//mSphereMesh->Draw();
-
-	////Screen texture 
-	//mTexScrceenShader.Bind();
-	//mNoiseTex->Activate(0);
-	//mQuadMesh->Draw();
-	//mNoiseTex->Disactivate();
-
-	//mRenderTarget.UnBind();
-	//glDisable(GL_BLEND);
-
 }
 
 void SampleLightingProgram::OnLateUpdate(float delta_time)
@@ -249,21 +126,18 @@ void SampleLightingProgram::OnDestroy()
 
 void SampleLightingProgram::OnUI()
 {
-
 	static UI::Windows::MaterialList mMaterialList{
-		mSphereMaterial,
-		mQuadMaterial,
-		mCubeMaterial,
+	mSphereMaterial,
+	mQuadMaterial,
+	mCubeMaterial,
 	};
 	UI::Windows::MaterialsEditor(mMaterialList);
 
-	//UI::Windows::SingleTextureEditor(*mQuadMaterial->diffuseMap);
 	HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mQuadMaterial->diffuseMap), dm_open_flag, false);
 
 	DirectionLightUIEditor();
 
-	/*static bool test = */ HELPER_REGISTER_UIFLAG("Lets Go", p_open_flag, false);
-
+	HELPER_REGISTER_UIFLAG("Lets Go", p_open_flag, false);
 	if (p_open_flag)
 	{
 		if (ImGui::Begin("Lets Go", &p_open_flag))
@@ -278,17 +152,7 @@ void SampleLightingProgram::OnUI()
 	}
 
 	if (mNoiseTex)
-	{
-		HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mNoiseTex), nt_open_flag, false);
-		//UI::Windows::SingleTextureEditor(*mNoiseTex);
-	}
-
-	if (mNoiseTex2)
-	{
-		HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mNoiseTex2), nt_open_flag, false);
-		//UI::Windows::SingleTextureEditor(*mNoiseTex2);
-	}
-
+		HELPER_SINGLE_TEXTURE_EDITOR_UIFLAG((*mNoiseTex), nt_open_flag, true);
 
 
 	UI::Windows::RenderTargetViewport(mRenderTarget);
@@ -305,8 +169,8 @@ void SampleLightingProgram::CreateObjects()
 	mCubeMesh = std::make_shared<RenderableMesh>(Loader::LoadMesh("assets/meshes/cube.rmesh"));
 	//for now load bunny instead of cone
 	ModelLoader model_loader;
-	mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh("assets/models/blendershapes/blender_cone.fbx"));
-
+	mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh("assets/models/blendershapes/cone_y(up).fbx"));
+	//mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh("assets/models/blendershapes/Maya_Cube.fbx"));
 
 	bool success = mShader.Create("lighting_shader", "assets/shaders/lighting/ModelLighting.vert", "assets/shaders/lighting/ModelLighting.frag");
 	
@@ -369,10 +233,10 @@ void SampleLightingProgram::CreateObjects()
 	glm::vec2 offset(1.5f);
 	for (int i = 0; i < count_per_axis; i++)
 	{
-		float x = (float)i * offset.x;
+		float x = static_cast<float>(i) * offset.x;
 		for (int j = 0; j < count_per_axis; j++)
 		{
-			mSphereTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, (float)j * offset.y)));
+			mSphereTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, static_cast<float>(j) * offset.y)));
 		}
 	}
 
@@ -380,22 +244,22 @@ void SampleLightingProgram::CreateObjects()
 	mat = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	for (int i = 0; i < count_per_axis; i++)
 	{
-		float x = (float)i * offset.x;
+		float x = static_cast<float>(i) * offset.x;
 		for (int j = 0; j < count_per_axis; j++)
 		{
-			m_CubeTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, (float)j * offset.y)));
+			m_CubeTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, static_cast<float>(j) * offset.y)));
 		}
 	}
 
 	//Cones
-	mat = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	offset = glm::vec2(2.0f);
+	mat = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 1.0f, 0.0f));
+	offset = glm::vec2(3.0f);
 	for (int i = 0; i < count_per_axis; i++)
 	{
-		float x = (float)i * offset.x;
+		float x = static_cast<float>(i) * offset.x;
 		for (int j = 0; j < count_per_axis; j++)
 		{
-			m_ConeTransform.push_back(glm::translate(mat, glm::vec3(x, (float)j * -offset.y, 0.0f)));
+			m_ConeTransform.push_back(glm::translate(mat, glm::vec3(x, 0.0f, static_cast<float>(j) * offset.y)));
 		}
 	}
 
@@ -469,33 +333,7 @@ void SampleLightingProgram::CreateObjects()
 	if (noise_pixels % 2 != 0)
 		noise_buf[noise_pixels - 1] = randomf();
 
-	mNoiseTex2= std::make_shared<GPUResource::Texture>(noise_width, noise_height, noise_buf, tex);
-
-
-	randomf.SetDistribution(0.0f, 1.0f);
-	mSamplingKernelPoints.reserve(64);
-	for (size_t i = 0; i < 64; i++)
-	{
-		glm::vec3 v = glm::vec3(
-						randomf() * 2.0f - 1.0f,
-						randomf(), // * 2.0f - 1.0f,
-						randomf() * 2.0f - 1.0f);
-
-
-		//normalise to anchor to the hemisphere surface
-		v = glm::normalize(v);
-		//v *= randomf();
-
-		float scale = static_cast<float>(i) / 64.0f;
-		scale = glm::mix(0.1f, 1.0f, scale * scale);
-		v *= scale;
-
-		DEBUG_LOG("Vector Sample: ", v);
-
-		mSamplingKernelPoints.emplace_back(v);
-	}
-
-
+	
 	PGL_ASSERT_CRITICAL(mDisplayManager, "No Display Window ro retrive screen dimension from");
 	mRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight());
 	//Register Resize
@@ -504,11 +342,11 @@ void SampleLightingProgram::CreateObjects()
 
 	GPUResource::TextureParameter render_target_para[3] = 
 	{
-		{GPUResource::IMGFormat::RGBA16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGBA},
-		{GPUResource::IMGFormat::RGB16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGB},
-		{GPUResource::IMGFormat::RGB16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGB},
+		{GPUResource::IMGFormat::RGBA16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP_EDGE, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGBA},
+		{GPUResource::IMGFormat::RGB16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP_EDGE, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGB},
+		{GPUResource::IMGFormat::RGB16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP_EDGE, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGB},
 	};
-	mMultiRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight(), 3, render_target_para);
+	mMultiRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight(), 3, {}, render_target_para);
 	mTestMultiRenderShader.Create("lighting_multi_render_shader", "assets/shaders/lighting/ModelLighting.vert", "assets/shaders/lighting/TestMultiRender.frag");
 	mShaderHotReloadTracker.AddShader(&mTestMultiRenderShader);
 	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::MultiRenderTarget::ResizeBuffer, &mMultiRenderTarget);
@@ -586,7 +424,7 @@ void SampleLightingProgram::ShadowPass()
 	//Draw avaliable mesh geometry
 
 	//sphere
-	if (mSphereMaterial)
+	if (mSphereMesh)
 	{
 		//Draw sphere
 		for (const auto& model : mSphereTransform)
@@ -596,7 +434,7 @@ void SampleLightingProgram::ShadowPass()
 		}
 	}
 	//cube
-	if (mCubeMaterial)
+	if (mCubeMesh)
 	{
 		//Draw sphere
 		for (const auto& model : m_CubeTransform)
@@ -632,9 +470,8 @@ void SampleLightingProgram::DrawScene(Shader& shader)
 
 
 	//plane 
-	if (mQuadMaterial)
+	if (mQuadMesh)
 	{
-
 		MaterialShaderHelper(shader, *mQuadMaterial);
 		//Draw planes
 		for (const auto& model : m_PlaneTransform)
@@ -661,7 +498,7 @@ void SampleLightingProgram::DrawScene(Shader& shader)
 
 
 	//cube
-	if (mCubeMaterial)
+	if (mCubeMesh)
 	{
 		MaterialShaderHelper(shader, *mCubeMaterial);
 		//Draw sphere
@@ -673,9 +510,10 @@ void SampleLightingProgram::DrawScene(Shader& shader)
 	}
 
 
+	//glDisable(GL_CULL_FACE);
 	if (mConeMesh)
 	{
-		if (!mCubeMaterial)
+		if (mCubeMaterial)
 			MaterialShaderHelper(shader, *mCubeMaterial);
 		//Draw sphere
 		for (const auto& model : m_ConeTransform)
@@ -684,6 +522,7 @@ void SampleLightingProgram::DrawScene(Shader& shader)
 			mConeMesh->Draw();
 		}
 	}
+	//glEnable(GL_CULL_FACE);
 
 
 	//Draw sphere
@@ -706,12 +545,7 @@ void SampleLightingProgram::DrawScene(Shader& shader)
 	mQuadMesh->DrawOutline();
 	shader.SetUniformMat4("uModel", glm::rotate(sample_origin_tran, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 	mQuadMesh->DrawOutline();
-	//sample points
-	for (const auto& s : mSamplingKernelPoints)
-	{
-		shader.SetUniformMat4("uModel", glm::translate(sample_origin_tran, s) * glm::scale(glm::mat4(1.0f), glm::vec3(0.2f)));
-		mSphereMesh->Draw();
-	}
+
 	//sphere
 	MaterialShaderHelper(shader, *mSphereMaterial);
 	shader.SetUniformMat4("uModel", glm::scale(sample_origin_tran, glm::vec3(2.0f)));

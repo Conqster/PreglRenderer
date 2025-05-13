@@ -29,7 +29,7 @@ enum class PreviewMeshType : uint8_t
 struct Resources
 {
 	Shader previewShader;
-	std::array<RenderableMesh, (size_t)PreviewMeshType::MAX_PREVIEW_MESHES> previewMeshes;
+	std::array<RenderableMesh, static_cast<size_t>(PreviewMeshType::MAX_PREVIEW_MESHES)> previewMeshes;
 
 	GPUResource::UniformBuffer cameraUBO;
 	GPUResource::Texture errorTexture;
@@ -154,7 +154,7 @@ void MaterialShaderHelper(Shader& shader, const BaseMaterial& mat)
 }
 
 
-void UI::Windows::MaterialsEditor(MaterialList materials)
+void UI::Windows::MaterialsEditor(MaterialList& materials)
 {
 	static bool update_preview_fbo = true;
 	static int mesh_id = 0;
@@ -201,7 +201,7 @@ void UI::Windows::MaterialsEditor(MaterialList materials)
 
 
 		auto preview_mesh = gResources->previewMeshes.front();
-		if (mesh_id < (int)PreviewMeshType::MAX_PREVIEW_MESHES)
+		if (mesh_id < static_cast<int>(PreviewMeshType::MAX_PREVIEW_MESHES))
 			preview_mesh = gResources->previewMeshes[mesh_id];
 
 		preview_mesh.Draw();
@@ -348,15 +348,15 @@ void UI::Windows::SingleTextureEditor(GPUResource::Texture& texture, const char*
 		bool update_texture = false;
 		//cache a copy of texture parameter 
 		GPUResource::TextureParameter tex_parameter = texture.GetParameter();
-		int curr_tex_type = (int)tex_parameter.textureType;
+		int curr_tex_type = static_cast<int>(tex_parameter.textureType);
 		auto tex_types = GPUResource::Utilities::TextureTypesToStringArray();
 		update_texture |= ImGui::Combo("Texture Type", &curr_tex_type, tex_types.data(), tex_types.size());
 		ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "{WIP}: Some of the options below crashes!!!");
-		int curr_img_format = (int)tex_parameter.imgInternalFormat;
+		int curr_img_format = static_cast<int>(tex_parameter.imgInternalFormat);
 		auto tex_img_format = GPUResource::Utilities::ImgFormatToStringArray();
 		update_texture |= ImGui::Combo("Texture Image Internal Format", &curr_img_format, tex_img_format.data(), tex_img_format.size());
 		update_texture |= ImGui::Checkbox("Use similar Internal - Tex Format", &tex_parameter.useEqualFormat);
-		int curr_tex_format = (int)tex_parameter.format;
+		int curr_tex_format = static_cast<int>(tex_parameter.format);
 		if (!tex_parameter.useEqualFormat)
 			update_texture |= ImGui::Combo("Texture Format", &curr_tex_format, tex_img_format.data(), tex_img_format.size());
 

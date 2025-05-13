@@ -36,6 +36,7 @@ uniform sampler2D uShadowMap;
 uniform Material uMaterial;
 uniform DirectionalLight uDirectionalLight;
 uniform bool uPhongRendering;
+uniform bool uEnableShadow = true;
 
 uniform float uOpacity = 1.0f;
 
@@ -94,7 +95,10 @@ vec3 ComputeDirectionalLight(DirectionalLight light, Material mat, vec3 N, vec3 
 	}
 	vec3 specular = light.specular * mat.specular * specularity;
 
-	float shadow = DirShadowCalculation(fs_in.fragPosLightSpace);
+	float shadow = 0.0f; 
+	if(uEnableShadow)
+		shadow = DirShadowCalculation(fs_in.fragPosLightSpace);
+		
 	return ambient + ((1.0f - shadow) * diffuse + specular);
 }
 

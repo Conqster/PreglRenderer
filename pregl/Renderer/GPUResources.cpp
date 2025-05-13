@@ -15,9 +15,9 @@ namespace GPUResource {
 				case IMGFormat::RGB: return GL_RGB;
 				case IMGFormat::RGBA: return GL_RGBA;
 
-				case IMGFormat::DEPTH: return GL_DEPTH_COMPONENT;
 
 				case IMGFormat::RGB16F: return GL_RGB16F;
+				case IMGFormat::RGBA8 : return GL_RGBA8;
 				case IMGFormat::RGBA16F: return GL_RGBA16F;
 
 				case IMGFormat::RGB32F: return GL_RGB32F;
@@ -26,23 +26,46 @@ namespace GPUResource {
 				case IMGFormat::RGBA16: return GL_RGBA16;
 
 				case IMGFormat::RED: return GL_RED;
+				case IMGFormat::R16F: return GL_R16F;
+				case IMGFormat::R32F: return GL_R32F;
 				case IMGFormat::RG: return GL_RG;
+
+				//Special cases 
+				case IMGFormat::DEPTH_COMPONENT: return GL_DEPTH_COMPONENT;
+				case IMGFormat::DEPTH24_STENCIL8: return GL_DEPTH24_STENCIL8;
 			}
 
 			DEBUG_LOG_ERROR("[TEXTURE]: Format not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			PGL_ASSERT_CRITICAL(false, "[TEXTURE]: Format not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			return GL_RGB;
 		}
 
+
+		static GLint Type(AttachmentType attachment)
+		{
+			switch (attachment)
+			{
+				case AttachmentType::DEPTH: return GL_DEPTH_ATTACHMENT;
+				case AttachmentType::DEPTH_STENCIL: return GL_DEPTH_STENCIL_ATTACHMENT;
+				case AttachmentType::STENCIL: return GL_STENCIL_ATTACHMENT;
+			}
+
+			DEBUG_LOG_ERROR("[TO OPENGL ATTACHMENT TYPE]: Attachment type not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			PGL_ASSERT_CRITICAL(false, "[TO OPENGL ATTACHMENT TYPE]: Attachment type not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			return GL_DEPTH_ATTACHMENT;
+		}
 
 		static GLint TexWrap(TexWrapMode mode)
 		{
 			switch (mode)
 			{
 				case TexWrapMode::REPEAT: return GL_REPEAT;
-				case TexWrapMode::CLAMP: return GL_CLAMP_TO_BORDER;
+				case TexWrapMode::CLAMP_EDGE: return GL_CLAMP_TO_EDGE;
+				case TexWrapMode::CLAMP_BORDER: return GL_CLAMP_TO_BORDER;
 			}
 
 			DEBUG_LOG_ERROR("[TO OPENGL WRAP]: Wrap mode not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			PGL_ASSERT_CRITICAL(false, "[TEXTURE]: Format not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			return GL_REPEAT;
 		}
 
@@ -56,6 +79,7 @@ namespace GPUResource {
 			}
 
 			DEBUG_LOG_ERROR("[TO OPENGL FILTER]: Filter mode not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			PGL_ASSERT_CRITICAL(false, "[TO OPENGL FILTER]: Filter mode not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!");
 			return GL_LINEAR;
 		}
 
@@ -68,8 +92,10 @@ namespace GPUResource {
 			}
 
 			DEBUG_LOG_ERROR("[TO OPENGL FILTER]: Filter mode not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!");
+			PGL_ASSERT_CRITICAL(false, "[TO OPENGL FILTER]: Filter mode not supported yet !!!!!!!!!!!!!!!!!!!!!!!!!!");
 			return GL_LINEAR;
 		}
+
 	} // To OpenGL
 
 
@@ -125,14 +151,14 @@ namespace GPUResource {
 		mType = parameter.textureType;
 		mParameter = parameter; //<- update parameter (??? after GPU retrival if needed)
 
-
+		
 		//wrap
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ToOpenGL::TexWrap(parameter.wrapMode)));
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ToOpenGL::TexWrap(parameter.wrapMode)));
 		//filter
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ToOpenGL::TexFilter(parameter.filterMode)));
 		GLCall(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, ToOpenGL::TexFilter(parameter.filterMode)));
-	
+		
 		GLCall(glBindTexture(GL_TEXTURE_2D, 0));
 		DEBUG_LOG_STATUS("[GPUResource]: New Texture Object ID: ", mID, " , ", mWidth, " , ", mHeight);
 
@@ -262,10 +288,10 @@ namespace GPUResource {
 		//generate img to render to (colour attachment/render texture) 
 		//Texture Parameter
 		TextureParameter tex_parameter{
-			IMGFormat::DEPTH,			//imgInternalFormat
+			IMGFormat::DEPTH_COMPONENT,			//imgInternalFormat
 			TextureType::SHADOW_MAP,	//textureType
 
-			TexWrapMode::CLAMP,		//wrapMode
+			TexWrapMode::CLAMP_EDGE,		//wrapMode
 			TexFilterMode::NEAREST,	//filterMode
 			DataType::FLOAT,			//pxDataType
 		};
@@ -322,7 +348,7 @@ namespace GPUResource {
 		Generate(width, height);
 	}
 
-	bool Framebuffer::Generate(unsigned int width, unsigned int height)
+	bool Framebuffer::Generate(unsigned int width, unsigned int height, RenderbufferParameter render_buf_para, TextureParameter tex_parameter)
 	{
 		glGenFramebuffers(1, &mID);
 		glBindFramebuffer(GL_FRAMEBUFFER, mID);
@@ -330,18 +356,9 @@ namespace GPUResource {
 		///////////////////////////////////////////////////////////////////////
 		// create colour attachment texture for frame buffer
 		///////////////////////////////////////////////////////////////////////
-		//Texture Parameter
-		TextureParameter tex_parameter{
-			IMGFormat::RGB,			//imgInternalFormat
-			TextureType::RENDER,	//textureType
-
-			TexWrapMode::CLAMP,		//wrapMode
-			TexFilterMode::LINEAR,	//filterMode
-			DataType::FLOAT,		//pxDataType
-		};
-
 		mWidth = width;
 		mHeight = height;
+		mRenderbufferPara = render_buf_para;
 		mRenderTexture.Generate(width, height, nullptr, tex_parameter);
 
 		//attach this new texture(fboTex) to the framebuffer FBO
@@ -351,11 +368,16 @@ namespace GPUResource {
 		///////////////////////////////////////////////////////////////////////
 		// create a render buffer object for depth and stencil 
 		///////////////////////////////////////////////////////////////////////
-		glGenRenderbuffers(1, &mRenderbufferID);
-		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
-
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbufferID);
+		if (mRenderbufferPara.bHasRenderbuffer)
+		{
+			glGenRenderbuffers(1, &mRenderbufferID);
+			glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+			//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+			//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbufferID);
+	
+			glRenderbufferStorage(GL_RENDERBUFFER, ToOpenGL::Format(mRenderbufferPara.storageBufferInternalFormat), mWidth, mHeight);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, ToOpenGL::Type(mRenderbufferPara.attachment), GL_RENDERBUFFER, mRenderbufferID);
+		}
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -385,7 +407,7 @@ namespace GPUResource {
 						IMGFormat::RGB,			//imgInternalFormat
 						TextureType::RENDER,	//textureType
 
-						TexWrapMode::CLAMP,		//wrapMode
+						TexWrapMode::CLAMP_EDGE,		//wrapMode
 						TexFilterMode::LINEAR,	//filterMode
 						DataType::FLOAT,		//pxDataType
 		};
@@ -396,8 +418,12 @@ namespace GPUResource {
 		mRenderTexture.Generate(mWidth, mHeight, nullptr, tex_parameter);
 
 		//resize render buffer
-		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+		if (mRenderbufferPara.bHasRenderbuffer)
+		{
+			glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+			//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+			glRenderbufferStorage(GL_RENDERBUFFER, ToOpenGL::Format(mRenderbufferPara.storageBufferInternalFormat), mWidth, mHeight);
+		}
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]:   Framebuffer did not complete!!!!");
@@ -428,7 +454,7 @@ namespace GPUResource {
 						IMGFormat::RGB,			//imgInternalFormat
 						TextureType::RENDER,	//textureType
 
-						TexWrapMode::CLAMP,		//wrapMode
+						TexWrapMode::CLAMP_EDGE,		//wrapMode
 						TexFilterMode::LINEAR,	//filterMode
 						DataType::FLOAT,		//pxDataType
 		};
@@ -505,12 +531,12 @@ namespace GPUResource {
 	// MultiRenderTarget
 	/////////////////////////////////////////////////////////////////////////////
 
-	MultiRenderTarget::MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count, TextureParameter render_target_tex_para_config[])
+	MultiRenderTarget::MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count, RenderbufferParameter render_buf_para, TextureParameter render_target_tex_para_config[])
 	{
-		Generate(width, height, count, render_target_tex_para_config);
+		Generate(width, height, count, render_buf_para, render_target_tex_para_config);
 	}
 
-	bool MultiRenderTarget::Generate(unsigned int width, unsigned int height, unsigned int count, TextureParameter render_target_tex_para_config[])
+	bool MultiRenderTarget::Generate(unsigned int width, unsigned int height, unsigned int count, RenderbufferParameter render_buf_para, TextureParameter render_target_tex_para_config[])
 	{
 
 
@@ -524,6 +550,7 @@ namespace GPUResource {
 		
 		mWidth = width;
 		mHeight = height;
+		mRenderbufferPara = render_buf_para;
 		mRenderTextures.clear();
 		mRenderTextures.assign(count, {}); // <-- assign default 
 		//check is parameter is not empty 
@@ -546,11 +573,15 @@ namespace GPUResource {
 		///////////////////////////////////////////////////////////////////////
 		// create a render buffer object for depth and stencil 
 		///////////////////////////////////////////////////////////////////////
-		glGenRenderbuffers(1, &mRenderbufferID);
-		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
-
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbufferID);
+		if (mRenderbufferPara.bHasRenderbuffer)
+		{
+			glGenRenderbuffers(1, &mRenderbufferID);
+			glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+			//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+			//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, mRenderbufferID);
+			glRenderbufferStorage(GL_RENDERBUFFER, ToOpenGL::Format(mRenderbufferPara.storageBufferInternalFormat), mWidth, mHeight);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, ToOpenGL::Type(mRenderbufferPara.attachment), GL_RENDERBUFFER, mRenderbufferID);
+		}
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -586,8 +617,13 @@ namespace GPUResource {
 		}
 
 		//resize render buffer
-		glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+		if (mRenderbufferPara.bHasRenderbuffer)
+		{
+			glBindRenderbuffer(GL_RENDERBUFFER, mRenderbufferID);
+			//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+
+			glRenderbufferStorage(GL_RENDERBUFFER, ToOpenGL::Format(mRenderbufferPara.storageBufferInternalFormat), mWidth, mHeight);
+		}
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			DEBUG_LOG_WARNING("[GPUResource - FRAMEBUFFER - RESIZE]:   Framebuffer did not complete!!!!");
@@ -623,7 +659,7 @@ namespace GPUResource {
 
 	void MultiRenderTarget::BindTextureIdx(unsigned int idx, unsigned int slot)
 	{
-		PGL_ASSERT(idx > mRenderTextures.size(), "idx out side render target count bounds.");
+		PGL_ASSERT(idx < mRenderTextures.size(), "idx out side render target count bounds.");
 		glActiveTexture(GL_TEXTURE0 + slot);
 		glBindTexture(GL_TEXTURE_2D, mRenderTextures[idx].GetID());
 	}

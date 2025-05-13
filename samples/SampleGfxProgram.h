@@ -27,6 +27,7 @@ public:
 
 	virtual void OnInitialise(AppWindow* display_window) override;
 	virtual void OnUpdate(float delta_time) override;
+	virtual void OnLateUpdate(float delta_time) override {};
 	virtual void OnDestroy() override;
 	virtual void OnUI() override;
 

@@ -15,7 +15,7 @@
 #include "Core/ShaderHotReloadTracker.h"
 
 class RenderableMesh;
-class BaseMaterial;
+struct BaseMaterial;
 class ImVec2;
 class SampleLightingProgram : public GraphicsProgramInterface
 {
@@ -89,17 +89,14 @@ private:
 	float mPreviewAmbientRatio = 0.4f;
 	Shader mPreviewShader;
 	glm::mat4 mPreviewTransform = glm::mat4(1.0f);
-	//void MaterialEditorUIWindow();
-	//bool Ext_QuatEditorPanel(glm::mat4& transform, ImVec2 top_left, ImVec2 size);
 
 	//Utility 
 	std::shared_ptr<GPUResource::Texture> mErrorTex = nullptr;
 	std::shared_ptr<GPUResource::Texture> mNoiseTex = nullptr;
-	std::shared_ptr<GPUResource::Texture> mNoiseTex2 = nullptr;
-	std::vector<glm::vec3> mSamplingKernelPoints;
 
 
 	GPUResource::Framebuffer mRenderTarget;
 	GPUResource::MultiRenderTarget mMultiRenderTarget;
 	Shader mTestMultiRenderShader;
+
 };

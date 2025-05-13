@@ -9,9 +9,12 @@ RenderableMesh ModelLoader::LoadAsSingleMesh(const std::string& path, bool flip_
 	if (flip_uv)
 		process_step |= aiProcess_FlipUVs;
 
+	//aiProcess_PreTransformVertices transform to a single object
+	process_step |= aiProcess_PreTransformVertices;
+
 	const aiScene* scene = importer.ReadFile(path, process_step);
 
-	if (!scene || scene->mFlags && AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+	if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
 	{
 		DEBUG_LOG_STATUS("[ASSIMP ERROR]: ", importer.GetErrorString());
 		return {};
@@ -20,56 +23,151 @@ RenderableMesh ModelLoader::LoadAsSingleMesh(const std::string& path, bool flip_
 	mCurrModelDir = path.substr(0, path.find_last_of('/'));
 
 	DEBUG_LOG_STATUS("[ASSIMP - Load as Single Mesh]: Loading Model, path: ", mCurrModelDir);
-    return SingleMeshProcessing(scene->mRootNode, scene);
+	auto [vertices, indices] = ProcessNodeSingleMesh(scene->mRootNode, scene, aiMatrix4x4(), false);
+	return RenderableMesh(vertices, indices);
 }
 
-RenderableMesh ModelLoader::SingleMeshProcessing(aiNode* node, const aiScene* scene)
+std::vector<LoadedMesh> ModelLoader::LoadAsCollectionMeshes(const std::string& path, bool flip_uv, bool bake_transform)
 {
-	DEBUG_LOG_STATUS("[PROCESS NODE]: For Single Mesh");
-	BatchProcessNodeForSingleMesh(node, scene);
-	if (mGroupedVertices.size() > 0 && mGroupedIndices.size())
+	Assimp::Importer importer;
+	int process_step = aiProcess_Triangulate;
+	if (flip_uv)
+		process_step |= aiProcess_FlipUVs;
+
+
+	//aiProcess_PreTransformVertices transform to a single object
+	//process_step |= aiProcess_PreTransformVertices;
+
+	const aiScene* scene = importer.ReadFile(path, process_step);
+
+	if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
 	{
-		RenderableMesh _mesh;
-		_mesh.Create(mGroupedVertices, mGroupedIndices);
-		DEBUG_LOG_STATUS("[ASSIMP - SINGLE MESH]: Single Mesh generated from Batches");
-		mGroupedVertices.clear();
-		mGroupedIndices.clear();
-		return _mesh;
+		DEBUG_LOG_STATUS("[ASSIMP ERROR]: ", importer.GetErrorString());
+		return {};
 	}
-	DEBUG_LOG_WARNING("[ASSIMP - SINGLE MESH]: No Mesh was generated");
-	return {};
+
+	mCurrModelDir = path.substr(0, path.find_last_of('/'));
+
+	DEBUG_LOG_STATUS("[ASSIMP - Load as Collection Meshe]: Loading Model, path: ", mCurrModelDir);
+	return ProcessNode(scene->mRootNode, scene, aiMatrix4x4(), bake_transform);
 }
 
-void ModelLoader::BatchProcessNodeForSingleMesh(aiNode* node, const aiScene* scene)
+
+/// <summary>
+/// Convertion to GLM has a column-major 
+/// </summary>
+/// <param name="from"></param>
+/// <returns></returns>
+glm::mat4 ModelLoader::AiMatrixToGLM(const aiMatrix4x4& m) const
 {
+	return glm::mat4(m.a1, m.b1, m.c1, m.d1,
+					 m.a2, m.b2, m.c2, m.d2,
+					 m.a3, m.b3, m.c3, m.d3,
+					 m.a4, m.b4, m.c4, m.d4);
+}
+
+std::vector<LoadedMesh> ModelLoader::ProcessNode(aiNode* node, const aiScene* scene, const aiMatrix4x4 parent_transform, bool bake_transform)
+{
+
 	DEBUG_LOG_STATUS("[PROCESS NODE] Mesh count: ", node->mNumMeshes, " from ", mCurrModelDir);
 	DEBUG_LOG_STATUS("[PROCESS NODE] Mesh children count: ", node->mNumChildren, " from ", mCurrModelDir);
 
+	std::vector<LoadedMesh> meshes;
+	aiMatrix4x4 local_trans = parent_transform;
+	//if (node->mNumMeshes > 0)
+	local_trans *= node->mTransformation;
 
+	//local_trans = node->mTransformation;
 	//process all node in current node
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		ProcessMeshAndBatchData(mesh, scene);
-		//temp_mesh.push_back(ProcessMesh(mesh, scene));
+
+
+		//load as mesh {vertices} offsets from rootnode location
+		//i.e vertices are transformed, but not its mesh itself 
+		//else loads mesh vertices to be determined with origin 0,0,0
+		//but the mesh global tranform would be the nodes transform.
+		// 
+		//load as mesh {vertices} offsets from rootnode location
+		//i.e vertices are transformed, but not its mesh itself 
+		aiMatrix4x4 smaple_local_transform = (bake_transform) ? local_trans : aiMatrix4x4();
+		auto [vertices, indices] = ProcessMesh(mesh, scene, smaple_local_transform);
+		LoadedMesh new_mesh
+		{
+			node->mName.C_Str(),
+			RenderableMesh(vertices, indices),
+			(bake_transform) ? glm::mat4(1.0f) : AiMatrixToGLM(local_trans)
+		};
+
+		meshes.push_back(new_mesh);
 	}
 
 	//transverse through current nodes children (recursively)
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{
-		//std::vector<ModelMesh> temp = ProcessNodes(node->mChildren[i], scene);
-		//temp_mesh.insert(temp_mesh.end(), temp.begin(), temp.end());
-		BatchProcessNodeForSingleMesh(node->mChildren[i], scene);
+		std::vector<LoadedMesh> children_meshes = ProcessNode(node->mChildren[i], scene, local_trans, bake_transform);
+		meshes.insert(meshes.end(), children_meshes.begin(), children_meshes.end());
 	}
 
 	DEBUG_LOG_STATUS("[PROCESS NODE]: node process complete.");
+	return meshes;
 }
 
-void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
+
+
+ModelLoader::MeshVerticesData ModelLoader::ProcessNodeSingleMesh(aiNode* node, const aiScene* scene, const aiMatrix4x4 parent_transform, bool bake_transform)
+{
+
+	//cache vertices & indices
+	std::vector<Vertex> cache_vertices;
+	std::vector<unsigned int> cache_indices;
+
+
+
+	aiMatrix4x4 local_trans = parent_transform * node->mTransformation;
+
+	//local_trans = node->mTransformation;
+	//process all node in current node
+	for (unsigned int i = 0; i < node->mNumMeshes; i++)
+	{
+		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+
+		//load as mesh {vertices} offsets from rootnode location
+		//i.e vertices are transformed, but not its mesh itself 
+		//else loads mesh vertices to be determined with origin 0,0,0
+		//but the mesh global tranform would be the nodes transform.
+		// 
+		//load as mesh {vertices} offsets from rootnode location
+		//i.e vertices are transformed, but not its mesh itself 
+		aiMatrix4x4 sample_local_transform = (bake_transform) ? local_trans : aiMatrix4x4();
+		auto [vertices, indices] = ProcessMesh(mesh, scene, sample_local_transform);
+		int offset = cache_vertices.size();
+		for (auto& i : indices)
+			i += offset;
+		cache_vertices.insert(cache_vertices.end(), vertices.begin(), vertices.end());
+		cache_indices.insert(cache_indices.end(), indices.begin(), indices.end());
+	}
+
+	//transverse through current nodes children (recursively)
+	for (unsigned int i = 0; i < node->mNumChildren; i++)
+	{
+		auto [vertices, indices] = ProcessNodeSingleMesh(node->mChildren[i], scene, local_trans, bake_transform);
+		int offset = cache_vertices.size();
+		for (auto& i : indices)
+			i += offset;
+		cache_vertices.insert(cache_vertices.end(), vertices.begin(), vertices.end());
+		cache_indices.insert(cache_indices.end(), indices.begin(), indices.end());
+	}
+	return MeshVerticesData{ cache_vertices, cache_indices };
+}
+
+
+ModelLoader::MeshVerticesData ModelLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene, const aiMatrix4x4 transform)
 {
 	//data from current mesh
 	std::vector<Vertex> temp_vertices;
-	std::vector<unsigned> temp_indices;
+	std::vector<unsigned int> temp_indices;
 
 
 	aiVector3D vp;     //position
@@ -86,10 +184,16 @@ void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		vp = mesh->mVertices[i];
-		vn = aiVector3D();
+		vn = (mesh->HasNormals()) ? mesh->mNormals[i] : aiVector3D();
 
+		//transform pos and nor
+		vp = transform * vp;
 		if (mesh->HasNormals())
-			vn = mesh->mNormals[i];
+		{
+			aiMatrix3x3 nor_mat = aiMatrix3x3(transform);
+			nor_mat = nor_mat.Inverse().Transpose();
+			vn = nor_mat * mesh->mNormals[i];
+		}
 
 		if (mesh->mTextureCoords[0])
 		{
@@ -126,7 +230,6 @@ void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
 		temp_vertices.push_back(vertex);
 	}
 
-
 	////////////////////////////
 	// INDICES
 	////////////////////////////
@@ -134,11 +237,8 @@ void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
 	{
 		aiFace face = mesh->mFaces[i];
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
-		{
 			temp_indices.push_back(face.mIndices[j]);
-		}
 	}
-
 
 
 	////////////////////////
@@ -156,10 +256,13 @@ void ModelLoader::ProcessMeshAndBatchData(aiMesh* mesh, const aiScene* scene)
 	}
 
 
-	mGroupedVertices.insert(mGroupedVertices.end(), temp_vertices.begin(), temp_vertices.end());
-	mGroupedIndices.insert(mGroupedIndices.end(), temp_indices.begin(), temp_indices.end());
 	DEBUG_LOG_STATUS("[PROCESS MESH]: Batched vertices & indices to Single Mesh groups.");
+	return MeshVerticesData{ temp_vertices, temp_indices };
 }
+
+
+
+
 
 std::vector<Vertex> ModelLoader::CalcAverageNormalsWcIndices(std::vector<Vertex>& vertices, std::vector<unsigned int> indices)
 {

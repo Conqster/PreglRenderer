@@ -75,7 +75,7 @@ void RenderableMesh::UnBind()
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 }
 
-void RenderableMesh::Draw()
+void RenderableMesh::Draw() const
 {
 	GLCall(glBindVertexArray(mVAO));
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIBO));

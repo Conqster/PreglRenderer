@@ -35,6 +35,7 @@ public:
 	void SetUniformMat4(const char* name, const glm::mat4& matrix);
 	void SetUniform1i(const char* name, int value);
 	void SetUniform1f(const char* name, float value);
+	void SetUniformVec2(const char* name, const glm::vec2& value);
 	void SetUniformVec3(const char* name, const glm::vec3& value);
 	void SetUniformVec4(const char* name, const glm::vec4& value);
 	void SetUniformBlockIdx(const char* name, int blockBindingIdx = 0);

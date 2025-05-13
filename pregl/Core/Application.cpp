@@ -189,6 +189,16 @@ void Application::Run()
 
 void Application::UpdateMainCamera(float dt)
 {
+	ImGuiIO& io = ImGui::GetIO();
+	//consider 
+	//want_text / want mouse capture
+
+
+
+	if ((io.WantTextInput || io.WantCaptureMouse) && !mDisplayManager.GetLockCursor())
+		return; 
+
+
 	if (mDisplayManager.GetLockCursor())
 		mMainCamera.Rotate(Input::GetMouseAxisFloat(IAxis::Vertical), Input::GetMouseAxisFloat(IAxis::Horizontal));
 
@@ -208,11 +218,9 @@ void Application::UpdateMainCamera(float dt)
 		mMainCamera.Translate(mMainCamera.GetUp(), dt);
 
 
-
 	if (Input::GetMousePressed(IKeyCode::MouseRightButton))
-	{
 		mDisplayManager.ToggleLockCursor();
-	}
+
 }
 
 void Application::ApplicationUI()
@@ -229,7 +237,7 @@ void Application::ApplicationUI()
 		if(ImGui::Checkbox("VSync", &helper_vsync_toggle))
 			mDisplayManager.SetVSync(helper_vsync_toggle);
 
-
+		ImGui::TextColored(ImVec4(0.5f, 0.9f, 0.2f, 1.0f), "Engine Metrics: 1cm = 1unit!!!");
 		//CAMERA
 		ImGui::SeparatorText("Camera info");
 		auto cam_pos = mMainCamera.GetPosition();
@@ -245,7 +253,7 @@ void Application::ApplicationUI()
 			ImGui::SliderFloat("Rot Speed", &mMainCamera.mRotSpeed, 0.0f, 10.0f, "%.1f");
 
 			ImGui::SliderFloat("FOV", &mMainCamera.mFOV, 0.0f, 179.0f, "%.1f");
-			ImGui::DragFloat("Near", &mMainCamera.mNear, 0.1f, 0.1f, 50.0f, "%.1f");
+			ImGui::DragFloat("Near", &mMainCamera.mNear, 0.1f, 0.01f, 50.0f, "%.1f");
 			ImGui::DragFloat("Far", &mMainCamera.mFar, 0.1f, 0.0f, 500.0f, "%.1f");
 
 			ImGui::TreePop();
@@ -261,6 +269,24 @@ void Application::ApplicationUI()
 			}
 			ImGui::TreePop();
 		}
+
+		ImGui::Spacing();
+		if (ImGui::TreeNode("UI Behaviour"))
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			ImGui::SliderFloat("Global Font scale", &io.FontGlobalScale, 0.0f, 2.0f);
+			ImGui::Text("want text input: %s", (io.WantTextInput) ? "true" : "false");
+			ImGui::Text("Wants to capture Keyboard: %s", (io.WantCaptureKeyboard) ? "true" : "false");
+			ImGui::Text("Wants to capture Mouse: %s", (io.WantCaptureMouse) ? "true" : "false");
+			ImGui::Text("Navigation Active: %s", (io.NavActive) ? "true" : "false");
+			ImGui::Text("Navigation visible: %s", (io.NavVisible) ? "true" : "false");
+
+			//consider 
+			//want_text / want mouse capture
+
+			ImGui::TreePop();
+		}
+		//io.FontGlobalScale
 	}
 	ImGui::End();
 }

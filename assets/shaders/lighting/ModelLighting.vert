@@ -32,12 +32,15 @@ uniform mat4 uLightSpaceMat;
 
 void main()
 {
-	vec4 v_model_pos = uModel * vec4(pos, 1.0f);
+	vec4 world_pos = uModel * vec4(pos, 1.0f);
 	
-	gl_Position = proj * view * v_model_pos;
-	
-	vs_out.fragPos = v_model_pos.xyz;
+	//fragment position in world (after apply model transform)
+	vs_out.fragPos = (uModel * vec4(pos, 1.0f)).xyz;
 	vs_out.viewPos = viewPos;
+	//normal in world space 
 	vs_out.normal = mat3(transpose(inverse(uModel))) * normalize(nor);
 	vs_out.fragPosLightSpace = uLightSpaceMat * uModel * vec4(pos, 1.0f);
-}
+	
+	gl_Position = proj * view * world_pos;
+	
+} 

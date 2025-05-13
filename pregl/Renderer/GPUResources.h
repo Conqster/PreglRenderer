@@ -15,7 +15,8 @@ namespace GPUResource {
 	enum class TexWrapMode : uint8_t
 	{
 		REPEAT,
-		CLAMP, //default clamp to border
+		CLAMP_EDGE, //default clamp to EDGE
+		CLAMP_BORDER, //default clamp to border
 
 		COUNT
 	};
@@ -32,22 +33,32 @@ namespace GPUResource {
 	{
 		RGB,
 		RGBA,
-
-		DEPTH,
-
+		RGBA8,
 		RGBA16,
-
 		RGB16F,
 		RGBA16F,
-
 		RGB32F,
 		RGBA32F,
-
 		RED,
+		R16F,
+		R32F,
 		RG,
+		DEPTH_COMPONENT,
+		DEPTH24_STENCIL8,
 
 		COUNT,
 	};
+
+
+	enum class AttachmentType : uint8_t
+	{
+		DEPTH,
+		STENCIL,
+		DEPTH_STENCIL,
+
+		COUNT
+	};
+
 
 	enum class DataType : uint8_t
 	{
@@ -67,6 +78,8 @@ namespace GPUResource {
 		COUNT,
 	};
 
+
+
 	struct TextureParameter
 	{
 		IMGFormat imgInternalFormat = IMGFormat::RGBA;
@@ -78,6 +91,13 @@ namespace GPUResource {
 		
 		bool useEqualFormat = true;
 		IMGFormat format = IMGFormat::RGBA;
+	};
+
+	struct RenderbufferParameter
+	{
+		bool bHasRenderbuffer = true;
+		IMGFormat storageBufferInternalFormat = IMGFormat::DEPTH24_STENCIL8;
+		AttachmentType attachment = AttachmentType::DEPTH_STENCIL;
 	};
 
 
@@ -129,7 +149,7 @@ namespace GPUResource {
 			case GPUResource::IMGFormat::RGBA:
 				return 4;
 				break;
-			case GPUResource::IMGFormat::DEPTH:
+			case GPUResource::IMGFormat::DEPTH_COMPONENT:
 				return 1;
 				break;
 			case GPUResource::IMGFormat::RGBA16:
@@ -150,10 +170,14 @@ namespace GPUResource {
 			case GPUResource::IMGFormat::RED:
 				return 1;
 				break;
+			case GPUResource::IMGFormat::R16F:
+				return 1;
+				break;
 			case GPUResource::IMGFormat::RG:
 				return 2;
 				break;
 			default:
+				
 				return 4;
 				break;
 			}
@@ -167,13 +191,13 @@ namespace GPUResource {
 
 		static std::array<const char*, static_cast<size_t>(IMGFormat::COUNT)> ImgFormatToStringArray()
 		{
-			return { "RGB", "RGBA", "DEPTH", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F", "RED", "RG"};
+			return { "RGB", "RGBA", "RGBA8", "RGBA16", "RGB16F", "RGBA16F", "RGB32F", "RGBA32F", "RED", "R16F", "R32F", "RG", "DEPTH_COMPONENT", "DEPTH24_STENCIL8"};
 		}
 
 		//static std::array<std::string, static_cast<size_t>(TexWrapMode::COUNT)> TextureWrapModeToStringArray()
 		static std::array<const char*, static_cast<size_t>(TexWrapMode::COUNT)> TextureWrapModeToStringArray()
 		{
-			return { "REPEAT", "CLAMP" };
+			return { "REPEAT", "CLAMP_EDGE" };
 		}
 
 		static std::array<const char*, static_cast<size_t>(TexFilterMode::COUNT)> TextureFilterModeToStringArray()
@@ -262,7 +286,14 @@ namespace GPUResource {
 		Framebuffer() = default;
 		Framebuffer(unsigned int width, unsigned int height);
 		~Framebuffer() { Delete(); }
-		bool Generate(unsigned int width, unsigned int height);
+		bool Generate(unsigned int width, unsigned int height, RenderbufferParameter render_buf_para = {}, TextureParameter tex_parameter = {
+																															IMGFormat::RGB,			//imgInternalFormat
+																															TextureType::RENDER,	//textureType
+
+																															TexWrapMode::CLAMP_EDGE,		//wrapMode
+																															TexFilterMode::LINEAR,	//filterMode
+																															DataType::FLOAT,		//pxDataType
+																															});
 
 		bool ResizeBuffer(unsigned int width, unsigned int height);
 		void ResizeBuffer2(unsigned int width, unsigned int height);
@@ -294,6 +325,7 @@ namespace GPUResource {
 			mRenderbufferID;
 		
 		Texture mRenderTexture;
+		RenderbufferParameter mRenderbufferPara;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -303,9 +335,9 @@ namespace GPUResource {
 	{
 	public:
 		MultiRenderTarget() = default;
-		MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count = 3, TextureParameter render_target_tex_para_config[] = {});
+		MultiRenderTarget(unsigned int width, unsigned int height, unsigned int count = 3, RenderbufferParameter render_buf_para = {}, TextureParameter render_target_tex_para_config[] = {});
 		~MultiRenderTarget() { Delete(); }
-		bool Generate(unsigned int width, unsigned int height, unsigned int count = 3, TextureParameter render_target_tex_para_config[] = nullptr);
+		bool Generate(unsigned int width, unsigned int height, unsigned int count = 3, RenderbufferParameter render_buf_para = {}, TextureParameter render_target_tex_para_config[] = nullptr);
 
 		void ResizeBuffer(unsigned int width, unsigned int height);
 		void Bind();
@@ -331,6 +363,7 @@ namespace GPUResource {
 			mRenderbufferID;
 
 		std::vector<Texture> mRenderTextures;
+		RenderbufferParameter mRenderbufferPara;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////

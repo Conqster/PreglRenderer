@@ -10,8 +10,7 @@
 //#include <array>
 
 struct ImVec2;
-class BaseMaterial;
-
+struct BaseMaterial;
 namespace GPUResource {
 class Texture;
 class Framebuffer;
@@ -88,13 +87,16 @@ namespace UI {
 	namespace Windows {
 
 		using MaterialList = std::vector<std::weak_ptr<BaseMaterial>>;
-		void MaterialsEditor(MaterialList materials);
+		void MaterialsEditor(MaterialList& materials);
 
 		void SingleTextureEditor(GPUResource::Texture& texture, const char* name_buf, bool* open_flag = nullptr);
 
 
 		void RenderTargetViewport(GPUResource::Framebuffer& render_target);
 		void MultiRenderTargetViewport(GPUResource::MultiRenderTarget& multi_render_target);
+
+	
+		void GameObjectsInspectorEditor(std::vector<GameObject>& game_objects);
 	} // UI::Windows namespace
 
 
@@ -111,7 +113,6 @@ namespace UI {
 
 
 	namespace Panels {
-
 		bool TransformQuaternion(glm::mat4& transform, ImVec2 top_left, ImVec2 size);
 	} // UI::Panels namespace
 } // UI namespace

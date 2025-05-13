@@ -283,8 +283,8 @@ void SampleGfxProgram::InputCheck(float delta_time)
 void SampleGfxProgram::CreateEntities()
 {
 	glm::mat4 plane_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)) *
-		glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
-		glm::scale(glm::mat4(1.0f), glm::vec3(20.0f));
+		glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+		glm::scale(glm::mat4(1.0f), glm::vec3(50.0f));
 	//glm::scale(glm::mat4(1.0f), glm::vec3(100.0f));
 
 	//create a plane enit

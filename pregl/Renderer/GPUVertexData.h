@@ -26,7 +26,7 @@ public:
 	void Bind();
 	void UnBind();
 
-	void Draw();
+	void Draw() const;
 	void DrawOutline();
 
 	void Clear();

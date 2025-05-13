@@ -43,7 +43,7 @@ public:
 	float mRotSpeed = 5.0f;
 	
 	float mFOV = 60.0f;
-	float mNear = 0.1f;
+	float mNear = 0.01f;
 	float mFar = 150.0f;
 
 	float mYaw = 90.0f;

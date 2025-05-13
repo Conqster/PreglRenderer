@@ -15,6 +15,12 @@ bool Shader::Create(const std::string& name, const std::string& ver, const std::
 	std::string fragment_code = ReadFile(frag);
 	bool has_geometry_shader = !geo.empty();
 	std::string geometry_code = (has_geometry_shader) ? ReadFile(geo) : "";
+
+	if (vertex_code.empty() || fragment_code.empty())
+	{
+		DEBUG_LOG_STATUS("Failed to Create Shader (", mName, "); due empty file.");
+		exit(-1);
+	}
 	
 	mID = glCreateProgram();
 	DEBUG_LOG_STATUS("Created Shader program, name: ", mName, ", GPU ID: ", mID);
@@ -150,6 +156,11 @@ void Shader::SetUniform1f(const char* name, float value)
 	glUniform1f(GetUniformLocation(name), value);
 }
 
+void Shader::SetUniformVec2(const char* name, const glm::vec2& value)
+{
+	glUniform2f(GetUniformLocation(name), value.x, value.y);
+}
+
 void Shader::SetUniformVec3(const char* name, const glm::vec3& value)
 {
 	glUniform3f(GetUniformLocation(name), value.x, value.y, value.z);
@@ -193,7 +204,7 @@ std::string Shader::ReadFile(const std::string& shader_file)
 	std::ifstream fileStream(shader_file, std::ios::in);
 	if (!fileStream.is_open())
 	{
-		DEBUG_LOG_WARNING("[Reading Shader File (for", mName, "]: Failed to read", shader_file, ", file doesn't exist.");
+		DEBUG_LOG_WARNING("[Reading Shader File (for ", mName, "]: Failed to read", shader_file, ", file doesn't exist.");
 		return "";
 	}
 	std::string line = "";

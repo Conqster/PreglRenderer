@@ -274,7 +274,7 @@ namespace Util
 		* can retrive & cache range .Range() returns Range<float> 
 		* 
 		* //  you can retrive and cache its state: 
-		* Range<float> cache_range = gRngFloat01.Range();						@get previous range
+		* Range<float> cache_range = gRngFloat01.Range();					@get previous range
 		* uint32_t cache_seed = gRngFloat01.GetSeed();						@get previous seed
 		* 
 		* // Then you can moditfy it:

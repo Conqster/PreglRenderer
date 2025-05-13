@@ -31,7 +31,6 @@ in VS_OUT
 	vec4 fragPosLightSpace;
 }fs_in;
 
-
 uniform sampler2D utextureMap;
 uniform sampler2D uShadowMap;
 
