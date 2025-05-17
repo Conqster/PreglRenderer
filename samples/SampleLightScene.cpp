@@ -34,7 +34,7 @@ void SampleLightingProgram::OnInitialise(AppWindow* display_window)
 	glDepthFunc(GL_LEQUAL);
 
 	if (!mErrorTex)
-		mErrorTex = std::make_shared<GPUResource::Texture>("assets/textures/Blank.png", false);
+		mErrorTex = std::make_shared<GPUResource::Texture>(PGL_ASSETS_PATH"/textures/Blank.png", false);
 
 	PGL_ASSERT_WARN(mErrorTex, "Failed to create Error Texture");
 
@@ -165,15 +165,15 @@ void SampleLightingProgram::OnUI()
 void SampleLightingProgram::CreateObjects()
 {
 	mSphereMesh = std::make_shared<RenderableMesh>(Util::CreateSphere());
-	mQuadMesh = std::make_shared<RenderableMesh>(Loader::LoadMesh("assets/meshes/quad.rmesh"));
-	mCubeMesh = std::make_shared<RenderableMesh>(Loader::LoadMesh("assets/meshes/cube.rmesh"));
+	mQuadMesh = std::make_shared<RenderableMesh>(Loader::LoadMesh(PGL_ASSETS_PATH"/meshes/quad.rmesh"));
+	mCubeMesh = std::make_shared<RenderableMesh>(Loader::LoadMesh(PGL_ASSETS_PATH"/meshes/cube.rmesh"));
 	//for now load bunny instead of cone
 	ModelLoader model_loader;
-	mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh("assets/models/blendershapes/cone_y(up).fbx"));
+	mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh(PGL_ASSETS_PATH"/models/blendershapes/cone_y(up).fbx"));
 	//mConeMesh = std::make_shared<RenderableMesh>(model_loader.LoadAsSingleMesh("assets/models/blendershapes/Maya_Cube.fbx"));
 
-	bool success = mShader.Create("lighting_shader", "assets/shaders/lighting/ModelLighting.vert", "assets/shaders/lighting/ModelLighting.frag");
-	
+	bool success = mShader.Create("lighting_shader", PGL_ASSETS_PATH"/shaders/lighting/ModelLighting.vert", PGL_ASSETS_PATH"/shaders/lighting/ModelLighting.frag");
+
 	mShaderHotReloadTracker.AddShader(&mShader);
 
 	mQuadMaterial = std::make_shared<BaseMaterial>();
@@ -196,9 +196,9 @@ void SampleLightingProgram::CreateObjects()
 	mCubeMaterial->diffuse = glm::vec3(0.1406f, 0.f, 0.96875f);
 	mCubeMaterial->specular = glm::vec3(0.4726f, 0.8984f, 0.9921f);
 
-	mQuadMaterial->diffuseMap = std::make_shared<GPUResource::Texture>("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
-	mQuadMaterial->normalMap = std::make_shared<GPUResource::Texture>("assets/textures/floor_brick/patterned_brick_floor_nor.jpg", true);
-	mQuadMaterial->specularMap = std::make_shared<GPUResource::Texture>("assets/textures/floor_brick/patterned_brick_floor_ao.jpg", true);
+	mQuadMaterial->diffuseMap = std::make_shared<GPUResource::Texture>(PGL_ASSETS_PATH"/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
+	mQuadMaterial->normalMap = std::make_shared<GPUResource::Texture>(PGL_ASSETS_PATH"/textures/floor_brick/patterned_brick_floor_nor.jpg", true);
+	mQuadMaterial->specularMap = std::make_shared<GPUResource::Texture>(PGL_ASSETS_PATH"/textures/floor_brick/patterned_brick_floor_ao.jpg", true);
 
 
 	////////////////////////////////////////
@@ -264,7 +264,7 @@ void SampleLightingProgram::CreateObjects()
 	}
 
 
-	mShadowShader.Create("shadow_depth", "assets/shaders/shadowMapping/ShadowDepth.vert", "assets/shaders/shadowMapping/ShadowDepth.frag");
+	mShadowShader.Create("shadow_depth", PGL_ASSETS_PATH"/shaders/shadowMapping/ShadowDepth.vert", PGL_ASSETS_PATH"/shaders/shadowMapping/ShadowDepth.frag");
 	mShadowMapFBO.Generate(4096);
 
 
@@ -273,9 +273,9 @@ void SampleLightingProgram::CreateObjects()
 	mPtrPreviewMaterial = mSphereMaterial;
 	mMaterialPreviewCam.SetPosition(glm::vec3(0.0f, 0.0f, -1.9f));
 	//mPreviewTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 1.9f));
-	mPreviewShader.Create("preview_shader", "assets/shaders/lighting/PreviewMaterial.vert", "assets/shaders/lighting/PreviewMaterial.frag");
+	mPreviewShader.Create("preview_shader", PGL_ASSETS_PATH"/shaders/lighting/PreviewMaterial.vert", PGL_ASSETS_PATH"/shaders/lighting/PreviewMaterial.frag");
 
-	mTexScrceenShader.Create("tex screen shader", "assets/shaders/TextureToScreen.vert", "assets/shaders/TextureToScreen.frag");
+	mTexScrceenShader.Create("tex screen shader", PGL_ASSETS_PATH"/shaders/TextureToScreen.vert", PGL_ASSETS_PATH"/shaders/TextureToScreen.frag");
 	mShaderHotReloadTracker.AddShader(&mTexScrceenShader);
 
 	//Noise generation per pixel data 
@@ -347,7 +347,7 @@ void SampleLightingProgram::CreateObjects()
 		{GPUResource::IMGFormat::RGB16F, GPUResource::TextureType::RENDER, GPUResource::TexWrapMode::CLAMP_EDGE, GPUResource::TexFilterMode::LINEAR, GPUResource::DataType::FLOAT, false, GPUResource::IMGFormat::RGB},
 	};
 	mMultiRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight(), 3, {}, render_target_para);
-	mTestMultiRenderShader.Create("lighting_multi_render_shader", "assets/shaders/lighting/ModelLighting.vert", "assets/shaders/lighting/TestMultiRender.frag");
+	mTestMultiRenderShader.Create("lighting_multi_render_shader", PGL_ASSETS_PATH"/shaders/lighting/ModelLighting.vert", PGL_ASSETS_PATH"/shaders/lighting/TestMultiRender.frag");
 	mShaderHotReloadTracker.AddShader(&mTestMultiRenderShader);
 	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::MultiRenderTarget::ResizeBuffer, &mMultiRenderTarget);
 }

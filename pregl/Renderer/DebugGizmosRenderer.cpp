@@ -25,8 +25,8 @@ bool DebugGizmosRenderer::Initialise()
 
     bool success = false;
     success = mShader.Create("debug-shader",
-                             "assets/shaders/debug/batchLines.vert", //vertex shader
-                             "assets/shaders/debug/batchLines.frag"); //fragment shader
+								PGL_ASSETS_PATH"/shaders/debug/batchLines.vert", //vertex shader
+								PGL_ASSETS_PATH"/shaders/debug/batchLines.frag"); //fragment shader
 
 	//New Line Segment
 	glGenVertexArrays(1, &mLineSegVertex.VAO);

@@ -21,8 +21,8 @@ int main()
 	//app.AddGfxProgram(gfx);
 	//
 
-	auto gfx = new SampleGfxProgram();
-	//auto gfx = new SampleLightingProgram();
+	//auto gfx = new SampleGfxProgram();
+	auto gfx = new SampleLightingProgram();
 	gfx->OnInitialise(&app.GetWindow());
 	gfx->SetCamera(&app.GetCamera());
 	app.AddGfxProgram(gfx);

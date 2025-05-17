@@ -22,9 +22,9 @@ void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 {
 	mDisplayManager = display_window;
 
-	bool success = mMeshShader.Create("experiment", "assets/shaders/test.vert", "assets/shaders/test.frag");
-	success &= mShadowShader.Create("shadow_depth", "assets/shaders/shadowDepth.vert", "assets/shaders/shadowDepth.frag");
-	success &= mWorldGridShader.Create("world_grid", "assets/shaders/worldGrid/worldGrid.vert", "assets/shaders/worldGrid/worldGrid.frag", "assets/shaders/worldGrid/worldGrid.geo");
+	bool success = mMeshShader.Create("experiment", PGL_ASSETS_PATH"/shaders/test.vert", PGL_ASSETS_PATH"/shaders/test.frag");
+	success &= mShadowShader.Create("shadow_depth", PGL_ASSETS_PATH"/shaders/shadowDepth.vert", PGL_ASSETS_PATH"/shaders/shadowDepth.frag");
+	success &= mWorldGridShader.Create("world_grid", PGL_ASSETS_PATH"/shaders/worldGrid/worldGrid.vert", PGL_ASSETS_PATH"/shaders/worldGrid/worldGrid.frag", PGL_ASSETS_PATH"/shaders/worldGrid/worldGrid.geo");
 
 	if(!mCamera)
 		mCamera = new EditorCamera(glm::vec3(0.41f, 5.29f, -10.61f), 90.0f, -0.3f, 17.5f, 4.0f);
@@ -43,9 +43,9 @@ void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 	printf("maximum vertices: %d\n", int(max_vertices));
 
 	//mBrickTexture = new Texture("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
-	mBrickTexture = new GPUResource::Texture("assets/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
-	mCheckersTexture = new GPUResource::Texture("assets/textures/test_checkers.jpg", true);
-	mPlainTexture = new GPUResource::Texture("assets/textures/plain64.png", true);
+	mBrickTexture = new GPUResource::Texture(PGL_ASSETS_PATH"/textures/floor_brick/patterned_brick_floor_diff.jpg", true);
+	mCheckersTexture = new GPUResource::Texture(PGL_ASSETS_PATH"/textures/test_checkers.jpg", true);
+	mPlainTexture = new GPUResource::Texture(PGL_ASSETS_PATH"/textures/plain64.png", true);
 
 
 
@@ -53,10 +53,10 @@ void SampleGfxProgram::OnInitialise(AppWindow* display_window)
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	mCubePrimitive = Loader::LoadMesh("assets/meshes/cube.rmesh");
-	mQuadPrimitive = Loader::LoadMesh("assets/meshes/quad.rmesh");
+	mCubePrimitive = Loader::LoadMesh(PGL_ASSETS_PATH"/meshes/cube.rmesh");
+	mQuadPrimitive = Loader::LoadMesh(PGL_ASSETS_PATH"/meshes/quad.rmesh");
 	mSpherePrimitive = Util::CreateSphere();
-	mTrianglePrimitive = Loader::LoadMesh("assets/meshes/triangle.rmesh");
+	mTrianglePrimitive = Loader::LoadMesh(PGL_ASSETS_PATH"/meshes/triangle.rmesh");
 
 	mShadowMapFBO.Generate(4096);
 
