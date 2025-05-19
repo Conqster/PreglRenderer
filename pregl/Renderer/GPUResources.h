@@ -318,11 +318,11 @@ namespace GPUResource {
 
 
 	private:
-		unsigned int mWidth, 
+		unsigned int mWidth = 256, 
 					 mHeight = 256;
 
-		unsigned int mID,
-			mRenderbufferID;
+		unsigned int mID = 0,
+			mRenderbufferID = 0;
 		
 		Texture mRenderTexture;
 		RenderbufferParameter mRenderbufferPara;

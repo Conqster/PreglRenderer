@@ -57,7 +57,7 @@ target_link_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/libs/assimp
 
 
 if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})										
-	target_compile_definitions(${PROJECT_NAME} PUBLIC PGL_ASSETS_PATH="Assets")
+	target_compile_definitions(${PROJECT_NAME} PUBLIC PGL_ASSETS_PATH="assets")
 else()									
 	get_filename_component(PGL_FOLDER_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)	
 	target_compile_definitions(${PROJECT_NAME} PUBLIC PGL_ASSETS_PATH="${PGL_FOLDER_NAME}/assets")

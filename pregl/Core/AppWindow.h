@@ -4,10 +4,14 @@
 #include <functional>
 #include <array>
 
-
-//REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::Framebuffer::ResizeBuffer2, &mRenderTarget);
-#define REGISTER_RESIZE_CALLBACK_HELPER(app_window, class_func_signature, class_inst) \
-		app_window.RegisterResizeCallback(std::bind(class_func_signature, class_inst, std::placeholders::_1, std::placeholders::_2));
+///Summary 
+// app_window --> target window
+// class_fun_signature --> callback function symbol  &GPUResource::MultiRenderTarget::ResizeBuffer (ResizeBuffer(unsigned int width, unsigned int height))
+// class_inst --> class variable instance 
+// resize_scale --> usually (1.0f) using normal window resize but useful for downsampling or upsampling buffers eg 
+// eg 0.5f halves the resolution when Resizing (use case SSAO frame buffer) etc
+#define REGISTER_RESIZE_CALLBACK_HELPER(app_window, class_func_signature, class_inst, resize_scale) \
+		app_window.RegisterResizeCallback(std::bind(class_func_signature, class_inst, std::placeholders::_1, std::placeholders::_2), resize_scale);
 
 //change name later
 struct GLFWwindow;
@@ -32,7 +36,7 @@ public:
 	inline bool GetVSync() const { return mVSync; }
 	void const SetVSync(bool value);
 
-	void RegisterResizeCallback(std::function<void(unsigned int width, unsigned int height)> new_resize_func_callback);
+	void RegisterResizeCallback(std::function<void(unsigned int width, unsigned int height)> new_resize_func_callback, float resize_scale);
 
 private:
 	friend class Application;
@@ -56,5 +60,10 @@ private:
 	static void OnWindowResizeCallback(GLFWwindow* window, int width, int height);
 
 	static uint8_t mResizeCallbackCount;
-	static std::array<std::function<void(unsigned int width, unsigned int height)>, gWindowMaxResizeCallbacks> mResizeCallbackFunctions;
+	struct ResizingCallback
+	{
+		std::function<void(unsigned int width, unsigned int height)> func;
+		float scale;
+	};
+	static std::array<ResizingCallback, gWindowMaxResizeCallbacks> mResizeCallbackFunctions;
 };

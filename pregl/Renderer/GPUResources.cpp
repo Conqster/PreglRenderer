@@ -403,15 +403,7 @@ namespace GPUResource {
 		mWidth = width;
 		mHeight = height;
 		//Texture Parameter
-		TextureParameter tex_parameter{
-						IMGFormat::RGB,			//imgInternalFormat
-						TextureType::RENDER,	//textureType
-
-						TexWrapMode::CLAMP_EDGE,		//wrapMode
-						TexFilterMode::LINEAR,	//filterMode
-						DataType::FLOAT,		//pxDataType
-		};
-
+		auto tex_parameter = mRenderTexture.GetParameter();
 
 		//texture checks if the same texture gpu id was created before,
 		//if so a new is not generate but old one parameters gets modified
@@ -450,14 +442,7 @@ namespace GPUResource {
 		mWidth = width;
 		mHeight = height;
 		//Texture Parameter
-		TextureParameter tex_parameter{
-						IMGFormat::RGB,			//imgInternalFormat
-						TextureType::RENDER,	//textureType
-
-						TexWrapMode::CLAMP_EDGE,		//wrapMode
-						TexFilterMode::LINEAR,	//filterMode
-						DataType::FLOAT,		//pxDataType
-		};
+		auto tex_parameter = mRenderTexture.GetParameter();
 
 
 		//texture checks if the same texture gpu id was created before,

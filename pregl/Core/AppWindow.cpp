@@ -12,7 +12,7 @@
 unsigned int AppWindow::mWindowWidth;
 unsigned int AppWindow::mWindowHeight;
 uint8_t AppWindow::mResizeCallbackCount;
-std::array<std::function<void(unsigned int width, unsigned int height)>, gWindowMaxResizeCallbacks> AppWindow::mResizeCallbackFunctions;
+std::array<AppWindow::ResizingCallback, gWindowMaxResizeCallbacks> AppWindow::mResizeCallbackFunctions;
 
 bool AppWindow::Init(const char* name, unsigned int width, unsigned int height, bool full_screen)
 {
@@ -64,10 +64,10 @@ void const AppWindow::SetVSync(bool value)
 }
 
 
-void AppWindow::RegisterResizeCallback(std::function<void(unsigned int width, unsigned int height)> new_resize_func_callback)
+void AppWindow::RegisterResizeCallback(std::function<void(unsigned int width, unsigned int height)> new_resize_func_callback, float resize_scale)
 {
 	if (mResizeCallbackCount < gWindowMaxResizeCallbacks)
-		mResizeCallbackFunctions[mResizeCallbackCount++] = new_resize_func_callback;
+		mResizeCallbackFunctions[mResizeCallbackCount++] = { new_resize_func_callback, resize_scale };
 	else
 		DEBUG_LOG_STATUS("Register Window Callback Reached Limit");
 }
@@ -129,7 +129,9 @@ void AppWindow::OnWindowResizeCallback(GLFWwindow* window, int width, int height
 	glViewport(0, 0, mWindowWidth, mWindowHeight);
 	for (size_t i = 0; i < mResizeCallbackCount; i++)
 	{
-		mResizeCallbackFunctions[i](mWindowWidth, mWindowHeight);
+		float resize_scale = mResizeCallbackFunctions[i].scale;
+		mResizeCallbackFunctions[i].func(static_cast<unsigned int>(mWindowWidth * resize_scale), 
+										 static_cast<unsigned int>(mWindowHeight * resize_scale));
 	}
 
 	DEBUG_LOG("New Window Display Screen width: ", width, ", height: ", height);

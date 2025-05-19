@@ -337,7 +337,7 @@ void SampleLightingProgram::CreateObjects()
 	PGL_ASSERT_CRITICAL(mDisplayManager, "No Display Window ro retrive screen dimension from");
 	mRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight());
 	//Register Resize
-	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::Framebuffer::ResizeBuffer2, &mRenderTarget);
+	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::Framebuffer::ResizeBuffer2, &mRenderTarget, 0.5f);
 	DEBUG_LOG_INFO("Framebuffer/renderTarget size: ", sizeof(GPUResource::Texture));
 
 	GPUResource::TextureParameter render_target_para[3] = 
@@ -349,7 +349,7 @@ void SampleLightingProgram::CreateObjects()
 	mMultiRenderTarget.Generate(mDisplayManager->GetWidth(), mDisplayManager->GetHeight(), 3, {}, render_target_para);
 	mTestMultiRenderShader.Create("lighting_multi_render_shader", PGL_ASSETS_PATH"/shaders/lighting/ModelLighting.vert", PGL_ASSETS_PATH"/shaders/lighting/TestMultiRender.frag");
 	mShaderHotReloadTracker.AddShader(&mTestMultiRenderShader);
-	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::MultiRenderTarget::ResizeBuffer, &mMultiRenderTarget);
+	REGISTER_RESIZE_CALLBACK_HELPER((*mDisplayManager), &GPUResource::MultiRenderTarget::ResizeBuffer, &mMultiRenderTarget, 1.0f);
 }
 
 
